@@ -1,19 +1,12 @@
-const baseConfig = require('../../eslint.config.js');
+import baseConfig from '../../eslint.config.js';
+import jsoncParser from 'jsonc-eslint-parser';
 
-module.exports = [
+export default [
   ...baseConfig,
   {
     files: ['**/*.json'],
-    rules: {
-      '@nx/dependency-checks': [
-        'error',
-        {
-          ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs}'],
-        },
-      ],
-    },
     languageOptions: {
-      parser: require('jsonc-eslint-parser'),
+      parser: jsoncParser,
     },
   },
 ];
