@@ -2,6 +2,7 @@ import {
   cancel,
   intro,
   isCancel,
+  multiselect,
   note,
   outro,
   select,
@@ -14,7 +15,10 @@ import { parsePackageManagerFromUserAgent } from './parsers.js';
 import { validateProjectName } from './validate-project-name.js';
 import { TemplateInfo } from './templates.js';
 
-export function printHelpMessage(templates: TemplateInfo[]) {
+export function printHelpMessage(
+  templates: TemplateInfo[],
+  platforms: TemplateInfo[]
+) {
   console.log(`
      Usage: create-rnef [options]
   
@@ -23,11 +27,15 @@ export function printHelpMessage(templates: TemplateInfo[]) {
        -h, --help       Display help for command
        -v, --version    Output the version number
        -d, --dir        Create project in specified directory
+       -t, --template       Specify template to use
+       -p, --platform       Specify platform(s) to use
        --override       Override files in target directory
      
      Templates:
-  
        ${templates.map((t) => t.name).join(', ')}
+
+     Platforms:
+       ${platforms.map((p) => p.name).join(', ')}
   `);
 }
 
@@ -77,12 +85,34 @@ export async function promptTemplate(
     throw new Error('No templates found');
   }
 
+  // if (templates.length === 1) {
+  //   return templates[0];
+  // }
+
   return checkCancel<TemplateInfo>(
     await select({
       message: 'Select a template:',
       options: templates.map((template) => ({
-        label: template.name,
         value: template,
+        label: template.name,
+      })),
+    })
+  );
+}
+
+export async function promptPlatforms(
+  platforms: TemplateInfo[]
+): Promise<TemplateInfo[]> {
+  if (platforms.length === 0) {
+    throw new Error('No platforms found');
+  }
+
+  return checkCancel<TemplateInfo[]>(
+    await multiselect({
+      message: 'Select platforms:',
+      options: platforms.map((platform) => ({
+        value: platform,
+        label: platform.name,
       })),
     })
   );

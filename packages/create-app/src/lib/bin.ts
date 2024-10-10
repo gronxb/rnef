@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { spinner } from '@clack/prompts';
 import {
-  renameFiles,
+  renameCommonFiles,
   renamePlaceholder,
   rewritePackageJson,
 } from './edit-template.js';
@@ -23,19 +24,22 @@ import {
   printWelcomeMessage,
   printByeMessage,
   promptTemplate,
+  promptPlatforms,
 } from './prompts.js';
 import {
   downloadTarballFromNpm,
   extractTarballFile,
-  resolveTemplateName,
+  TemplateInfo,
+  PLATFORMS,
+  resolveTemplate as resolveTemplate,
   TEMPLATES,
 } from './templates.js';
 
-async function create() {
+export async function run() {
   const options = parseCliOptions(process.argv.slice(2));
 
   if (options.help) {
-    printHelpMessage(TEMPLATES);
+    printHelpMessage(TEMPLATES, PLATFORMS);
     return;
   }
 
@@ -66,64 +70,102 @@ async function create() {
   removeDir(absoluteTargetDir);
   fs.mkdirSync(absoluteTargetDir, { recursive: true });
 
-  const template =
-    resolveTemplateName(options.template) ?? (await promptTemplate(TEMPLATES));
+  const template = options.template
+    ? resolveTemplate(TEMPLATES, options.template)
+    : await promptTemplate(TEMPLATES);
 
+  const platforms = options.platforms
+    ? options.platforms.map((p) => resolveTemplate(PLATFORMS, p))
+    : await promptPlatforms(PLATFORMS);
+
+  await extractPackage(absoluteTargetDir, template);
+  for (const platform of platforms) {
+    await extractPackage(absoluteTargetDir, platform);
+  }
+
+  // TODO: add pluging packages
   const loader = spinner();
-  let tarballPath: string | null = null;
+  loader.start('Updating template...');
+  // TODO: add relavant platform plugins to package.json
+  rewritePackageJson(absoluteTargetDir, projectName);
+  renameCommonFiles(absoluteTargetDir);
+  renamePlaceholder(absoluteTargetDir, projectName);
+  createConfig(absoluteTargetDir, platforms);
+  loader.stop('Updated template.');
 
+  printByeMessage(absoluteTargetDir);
+}
+
+async function extractPackage(absoluteTargetDir: string, pkg: TemplateInfo) {
+  const loader = spinner();
+
+  let tarballPath: string | null = null;
   // NPM package: download tarball file
-  if (template.packageName) {
-    loader.start(
-      `Downloading package ${template.packageName}@${template.version}...`
-    );
+  if (pkg.packageName) {
+    loader.start(`Downloading package ${pkg.packageName}@${pkg.version}...`);
     tarballPath = await downloadTarballFromNpm(
-      template.packageName,
-      template.version,
+      pkg.packageName,
+      pkg.version,
       absoluteTargetDir
     );
   }
   // Local tarball file
   else if (
-    template.localPath?.endsWith('.tgz') ||
-    template.localPath?.endsWith('.tar.gz') ||
-    template.localPath?.endsWith('.tar')
+    pkg.localPath?.endsWith('.tgz') ||
+    pkg.localPath?.endsWith('.tar.gz') ||
+    pkg.localPath?.endsWith('.tar')
   ) {
-    tarballPath = template.localPath;
+    tarballPath = pkg.localPath;
   }
 
   // Extract tarball file: either from NPM or local one
   if (tarballPath) {
-    if (template.packageName) {
-      loader.message(`Extracting package ${template.name}.`);
+    if (pkg.packageName) {
+      loader.message(`Extracting package ${pkg.name}...`);
     } else {
-      loader.start(`Extracting package ${template.name}...`);
+      loader.start(`Extracting package ${pkg.name}...`);
     }
 
     await extractTarballFile(tarballPath, absoluteTargetDir);
 
-    if (template.packageName) {
+    if (pkg.packageName) {
       fs.unlinkSync(tarballPath);
-      loader.stop(`Downloaded and extracted package ${template.packageName}.`);
+      loader.stop(`Downloaded and extracted package ${pkg.packageName}.`);
     } else {
-      loader.stop(`Extracted package ${template.name}.`);
+      loader.stop(`Extracted package ${pkg.name}.`);
     }
-  } else if (template.localPath) {
-    loader.start(`Copying local directory ${template.localPath}`);
-    copyDirSync(template.localPath, absoluteTargetDir);
-    loader.stop(`Copied local directory ${template.localPath}.`);
-  } else {
-    // This should never happen as we have either NPM package or local path (tarball or directory).
-    throw new Error(
-      `Invalid state: template not found: ${JSON.stringify(template, null, 2)}`
-    );
+
+    return;
   }
 
-  rewritePackageJson(absoluteTargetDir, projectName);
-  renameFiles(absoluteTargetDir);
-  renamePlaceholder(absoluteTargetDir, projectName);
+  if (pkg.localPath) {
+    loader.start(`Copying local directory ${pkg.localPath}...`);
+    copyDirSync(pkg.localPath, absoluteTargetDir);
+    loader.stop(`Copied local directory ${pkg.localPath}.`);
 
-  printByeMessage(absoluteTargetDir);
+    return;
+  }
+
+  // This should never happen as we have either NPM package or local path (tarball or directory).
+  throw new Error(
+    `Invalid state: template not found: ${JSON.stringify(pkg, null, 2)}`
+  );
 }
 
-create();
+function createConfig(absoluteTargetDir: string, platforms: TemplateInfo[]) {
+  const rnefConfig = path.join(absoluteTargetDir, 'rnef.config.js');
+  fs.writeFileSync(
+    rnefConfig,
+    `module.exports = {
+  plugins: {},
+  platforms: {
+    ${platforms
+      .map(
+        (template) => `${template.name}: require("${template.localPath}")(),`
+      )
+      .join('\n    ')}
+  },
+};
+`
+  );
+}

@@ -1,5 +1,6 @@
-import * as fs from 'node:fs/promises';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import packageJson from 'package-json';
 import * as tar from 'tar';
 import { resolveAbsolutePath } from './fs.js';
@@ -10,31 +11,63 @@ export type NpmTemplateInfo = {
   name: string;
   version: string;
   packageName: string;
+  directory?: string;
+
   localPath?: undefined;
 };
 
 export type LocalTemplateInfo = {
   name: string;
-  version?: undefined;
   localPath: string;
+  directory?: string;
+
+  version?: undefined;
   packageName?: undefined;
 };
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const TEMP_PACKAGES_PATH = findPackagesDir();
+const TEMP_TEMPLATES_PATH = path.join(TEMP_PACKAGES_PATH, '../templates');
 
 export const TEMPLATES: TemplateInfo[] = [
   {
     name: 'default',
-    version: 'latest',
-    packageName: '@callstack/repack',
+    // version: 'latest',
+    // packageName: '@callstack/rnef-template-default',
+    localPath: path.join(TEMP_TEMPLATES_PATH, 'rnef-template-default'),
   },
 ];
 
-export function resolveTemplateName(name?: string): TemplateInfo | null {
-  if (!name) {
-    return null;
-  }
+export const PLATFORMS: TemplateInfo[] = [
+  {
+    name: 'ios',
+    // version: 'latest',
+    // packageName: '@callstack/rnef-plugin-platform-ios/',
+    localPath: path.join(
+      TEMP_PACKAGES_PATH,
+      'plugin-platform-ios',
+      'dist/src/template'
+    ),
+  },
+  {
+    name: 'android',
+    // version: 'latest',
+    // packageName: '@callstack/rnef-plugin-platform-android',
+    localPath: path.join(
+      TEMP_PACKAGES_PATH,
+      'plugin-platform-android',
+      'dist/src/template'
+    ),
+  },
+];
 
+export function resolveTemplate(
+  templates: TemplateInfo[],
+  name: string
+): TemplateInfo {
   // Check if the template is a template from the list
-  const templateFromList = TEMPLATES.find((t) => t.name === name);
+  const templateFromList = templates.find((t) => t.name === name);
   if (templateFromList) {
     return templateFromList;
   }
@@ -94,7 +127,7 @@ export async function downloadTarballFromNpm(
     );
     // Write the tarball to disk
     const arrayBuffer = await response.arrayBuffer();
-    await fs.writeFile(tarballPath, Buffer.from(arrayBuffer));
+    fs.writeFileSync(tarballPath, Buffer.from(arrayBuffer));
 
     return tarballPath;
   } catch (error) {
@@ -110,4 +143,17 @@ export function extractTarballFile(tarballPath: string, targetDir: string) {
     cwd: targetDir,
     strip: 1, // Remove the top-level directory
   });
+}
+
+function findPackagesDir() {
+  let dir = __dirname;
+  while (dir !== '/') {
+    if (path.basename(dir) === 'packages') {
+      return dir;
+    }
+
+    dir = path.dirname(dir);
+  }
+
+  throw new Error('"packages" directory not found');
 }
