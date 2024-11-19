@@ -1,12 +1,21 @@
-# <center>React Native Enterprise Framework</center>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/rnef.png">
+    <img alt="RNEF" src="./docs/assets/rnef.png" height="200">
+  </picture>
+</p>
+<h1 align="center" style="border-bottom: 0px">
+  React Native Enterprise Framework<br />
+</h1>
+<p align="center">
+  This is a React Native framework for developing large, modular applications for all the platforms supported by React Native.
+</p>
 
-<center><image src="./docs/assets/rnef.png" height=200 /></center>
-
-This is a React Native Framework for developing large, modular applications for all the platforms supported by React Native.
+---
 
 ## Features
 
-- 🔪 Incremental adoption in native apps thanks to our simplified brownfield approach
+- 🐾 Incremental adoption in native apps thanks to our simplified brownfield approach
 - 🔬 Web-like DX thanks to advanced native build caching hosted on your infra
 - 🏰 Pluggable design to leverage out-of-tree platforms, custom bundlers, etc.
 
