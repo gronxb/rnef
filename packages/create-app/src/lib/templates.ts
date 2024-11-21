@@ -8,21 +8,20 @@ import { resolveAbsolutePath } from './fs.js';
 export type TemplateInfo = NpmTemplateInfo | LocalTemplateInfo;
 
 export type NpmTemplateInfo = {
+  type: 'npm';
   name: string;
   version: string;
   packageName: string;
-  directory?: string;
-
-  localPath?: undefined;
+  /** Directory inside package that contains the template */
+  directory: string | undefined;
 };
 
 export type LocalTemplateInfo = {
+  type: 'local';
   name: string;
   localPath: string;
-  directory?: string;
-
-  version?: undefined;
-  packageName?: undefined;
+  packageName: string;
+  directory: string | undefined;
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -32,33 +31,28 @@ const TEMP_TEMPLATES_PATH = path.join(TEMP_PACKAGES_PATH, '../templates');
 
 export const TEMPLATES: TemplateInfo[] = [
   {
+    type: 'local',
     name: 'default',
-    // version: 'latest',
-    // packageName: '@callstack/rnef-template-default',
+    packageName: '@callstack/rnef-template-default',
     localPath: path.join(TEMP_TEMPLATES_PATH, 'rnef-template-default'),
+    directory: '.',
   },
 ];
 
 export const PLATFORMS: TemplateInfo[] = [
   {
+    type: 'local',
     name: 'ios',
-    // version: 'latest',
-    // packageName: '@callstack/rnef-plugin-platform-ios/',
-    localPath: path.join(
-      TEMP_PACKAGES_PATH,
-      'plugin-platform-ios',
-      'dist/src/template'
-    ),
+    packageName: '@callstack/rnef-plugin-platform-ios',
+    localPath: path.join(TEMP_PACKAGES_PATH, 'plugin-platform-ios', 'dist'),
+    directory: 'src/template',
   },
   {
+    type: 'local',
     name: 'android',
-    // version: 'latest',
-    // packageName: '@callstack/rnef-plugin-platform-android',
-    localPath: path.join(
-      TEMP_PACKAGES_PATH,
-      'plugin-platform-android',
-      'dist/src/template'
-    ),
+    packageName: '@callstack/rnef-plugin-platform-android',
+    localPath: path.join(TEMP_PACKAGES_PATH, 'plugin-platform-android', 'dist'),
+    directory: 'src/template',
   },
 ];
 
@@ -87,20 +81,46 @@ export function resolveTemplate(
     const ext = path.extname(basename);
 
     return {
+      type: 'local',
       name: basename.slice(0, basename.length - ext.length),
       localPath: resolveAbsolutePath(name),
+      directory: '.',
+      packageName: basename.slice(0, basename.length - ext.length),
     };
   }
 
   // TODO: handle cases when template is github repo url
 
-  // Otherwise, assume it's a package name
-  // TODO: handle NPM version
+  // Otherwise, assume it's a npm package
   return {
-    name: name,
-    packageName: name,
-    version: 'latest',
+    type: 'npm',
+    name: getNpmLibraryName(name),
+    packageName: getNpmLibraryName(name),
+    directory: '.',
+    version: getNpmLibraryVersion(name) ?? 'latest',
   };
+}
+
+// handles `package@x.y.z` and `@scoped/package@x.y.z` package naming schemes
+function getNpmLibraryVersion(name: string) {
+  const splitName = name.split('@');
+  if (splitName.length === 3 && splitName[0] === '') {
+    return splitName[2];
+  } else if (splitName.length === 2 && splitName[0] !== '') {
+    return splitName[1];
+  }
+  return null;
+}
+
+// handles `package@x.y.z` and `@scoped/package@x.y.z` package naming schemes
+function getNpmLibraryName(name: string) {
+  const splitName = name.split('@');
+  if (splitName.length === 3 && splitName[0] === '') {
+    return `@${splitName[1]}`;
+  } else if (splitName.length === 2 && splitName[0] !== '') {
+    return splitName[0];
+  }
+  return name;
 }
 
 export async function downloadTarballFromNpm(
