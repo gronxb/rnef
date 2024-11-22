@@ -38,18 +38,21 @@ export const cli = async ({ cwd, argv }: CliOptions = {}) => {
     const cmd = program
       .command(command.name)
       .description(command.description || '')
-      .action(() => {
+      .action((args) => {
         try {
-          command.action(program.args);
-        } catch (e) {
-          // TODO handle nicely
-          logger.error(e as string);
+          command.action(args);
+        } catch (error) {
+          logger.error(`Unexpected error while running "${command.name}": ${error}`);
           process.exit(1);
         }
       });
 
     for (const opt of command.options || []) {
-      cmd.option(opt.name, opt.description ?? '');
+      if (opt.parse) {
+        cmd.option(opt.name, opt.description, opt.parse, opt.default);
+      } else {
+        cmd.option(opt.name, opt.description, opt.default);
+      }
     }
   });
 
