@@ -77,10 +77,6 @@ export async function promptTemplate(
     throw new Error('No templates found');
   }
 
-  // if (templates.length === 1) {
-  //   return templates[0];
-  // }
-
   return checkCancelPrompt<TemplateInfo>(
     await select({
       message: 'Select a template:',
@@ -105,6 +101,26 @@ export async function promptPlatforms(
       options: platforms.map((platform) => ({
         value: platform,
         label: platform.name,
+      })),
+    })
+  );
+}
+
+export async function promptPlugins(
+  plugins: TemplateInfo[]
+): Promise<TemplateInfo[]> {
+  if (plugins.length === 0) {
+    throw new Error('No plugins found');
+  }
+
+  return checkCancelPrompt<TemplateInfo[]>(
+    await multiselect({
+      message: 'Select plugins:',
+      initialValues: [plugins[0]],
+      // @ts-expect-error todo fixup type
+      options: plugins.map((plugin) => ({
+        value: plugin,
+        label: plugin.name,
       })),
     })
   );
