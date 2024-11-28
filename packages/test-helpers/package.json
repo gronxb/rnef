@@ -2,10 +2,12 @@
   "name": "@callstack/rnef-test-helpers",
   "version": "0.0.1",
   "type": "module",
+  "private": true,
+  "exports": {
+    "types": "./dist/src/index.d.ts",
+    "import": "./dist/src/index.js"
+  },
   "dependencies": {
     "tslib": "^2.3.0"
-  },
-  "main": "./src/index.js",
-  "typings": "./src/index.d.ts",
-  "private": true
+  }
 }
