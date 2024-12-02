@@ -292,7 +292,7 @@ function spawnMockImplementation(
   return { output: '...' };
 }
 
-test.each([['release'], [undefined], ['staging']])(
+test.each([['release'], ['debug'], ['staging']])(
   'runAndroid runs gradle build with correct configuration for --mode %s and launches on emulator-5552',
   async (mode) => {
     (spawn as Mock).mockImplementation((file, args) =>
@@ -301,7 +301,7 @@ test.each([['release'], [undefined], ['staging']])(
     const logErrorSpy = vi.spyOn(logger, 'error');
     await runAndroid({ ...androidProject }, { ...args, mode }, '/');
 
-    expect(mocks.outroMock).toBeCalledWith('Success.');
+    expect(mocks.outroMock).toBeCalledWith('Success 🎉.');
     expect(logErrorSpy).not.toBeCalled();
 
     // Runs installDebug with only active architecture arm64-v8a
@@ -349,7 +349,7 @@ test('runAndroid runs gradle build with custom --appId, --appIdSuffix and --main
     '/'
   );
 
-  expect(mocks.outroMock).toBeCalledWith('Success.');
+  expect(mocks.outroMock).toBeCalledWith('Success 🎉.');
   expect(logErrorSpy).not.toBeCalled();
 
   // launches com.custom.suffix app with OtherActivity on emulator-5552
@@ -375,7 +375,7 @@ test('runAndroid fails to launch an app on not-connected device when specified w
       '/'
     );
   } catch {
-    expect(mocks.outroMock).not.toBeCalledWith('Success.');
+    expect(mocks.outroMock).not.toBeCalledWith('Success 🎉.');
     expect(logErrorSpy).toBeCalledWith(
       'Device "emulator-5554" not found. Please run it first or use a different one.'
     );
@@ -385,8 +385,8 @@ test('runAndroid fails to launch an app on not-connected device when specified w
 test.each([
   ['release', true],
   ['release', false],
-  [undefined, true],
-  [undefined, false],
+  ['debug', true],
+  ['debug', false],
 ])(
   `runAndroid launches an app on a selected device emulator-5554 when connected in --mode %s and --interactive %b`,
   async (mode, interactive) => {

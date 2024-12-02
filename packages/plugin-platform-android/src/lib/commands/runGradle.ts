@@ -3,28 +3,25 @@ import type { AndroidProject, Flags } from './runAndroid/runAndroid.js';
 import { getAdbPath, getDevices } from './runAndroid/adb.js';
 import spawn from 'nano-spawn';
 import type { BuildFlags } from './buildAndroid/buildAndroid.js';
-import { toPascalCase } from './toPascalCase.js';
+import { spinner } from '@clack/prompts';
 
 export async function runGradle({
-  taskType,
+  tasks,
   androidProject,
-  selectedTask,
   args,
 }: {
-  taskType: 'install' | 'bundle' | 'assemble';
+  tasks: string[];
   androidProject: AndroidProject;
-  selectedTask?: string;
   args: BuildFlags | Flags;
 }) {
   if ('binaryPath' in args) {
     return;
   }
-  const gradleArgs = getTaskNames(
-    androidProject.appName,
-    args.mode,
-    selectedTask ? [selectedTask] : args.tasks,
-    taskType
-  );
+  const loader = spinner();
+  loader.start('');
+  loader.stop('Running Gradle build ↓');
+
+  const gradleArgs = getTaskNames(androidProject.appName, tasks);
 
   gradleArgs.push('-x', 'lint');
 
@@ -56,6 +53,8 @@ export async function runGradle({
       stdio: 'inherit',
       cwd: androidProject.sourceDir,
     });
+    loader.start('');
+    loader.stop('Gradle build finished.');
   } catch {
     logger.error(
       `Failed to build the app. See the error above for details from Gradle.`
@@ -68,16 +67,8 @@ export function getGradleWrapper() {
   return process.platform.startsWith('win') ? 'gradlew.bat' : './gradlew';
 }
 
-function getTaskNames(
-  appName: string,
-  mode: BuildFlags['mode'] = 'debug',
-  tasks: BuildFlags['tasks'],
-  taskType: 'assemble' | 'install' | 'bundle'
-): Array<string> {
-  const appTasks =
-    tasks && tasks.length ? tasks : [taskType + toPascalCase(mode)];
-
-  return appTasks.map((task) => `${appName}:${task}`);
+function getTaskNames(appName: string, tasks: string[]): Array<string> {
+  return tasks.map((task) => `${appName}:${task}`);
 }
 
 /**

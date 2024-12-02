@@ -1,11 +1,14 @@
 import { AndroidProjectConfig } from '@react-native-community/cli-types';
 import { runGradle } from '../runGradle.js';
 import { promptForTaskSelection } from '../listAndroidTasks.js';
-import { intro, outro } from '@clack/prompts';
+import { findOutputFile } from '../runAndroid/tryInstallAppOnDevice.js';
+import { outro, spinner } from '@clack/prompts';
 import { logger } from '@callstack/rnef-tools';
+import color from 'picocolors';
+import { toPascalCase } from '../toPascalCase.js';
 
 export interface BuildFlags {
-  mode?: string;
+  mode: string;
   activeArchOnly?: boolean;
   tasks?: Array<string>;
   extraParams?: Array<string>;
@@ -17,14 +20,21 @@ export async function buildAndroid(
   args: BuildFlags
 ) {
   normalizeArgs(args);
-  intro('Building Android app.');
 
-  const selectedTask = args.interactive
-    ? await promptForTaskSelection('bundle', androidProject.sourceDir)
-    : undefined;
+  const tasks = args.interactive
+    ? [await promptForTaskSelection('bundle', androidProject.sourceDir)]
+    : [...(args.tasks ?? []), `bundle${toPascalCase(args.mode)}`];
 
-  await runGradle({ taskType: 'bundle', androidProject, args, selectedTask });
-  outro('Success.');
+  await runGradle({ tasks, androidProject, args });
+
+  const outputFilePath = await findOutputFile(androidProject, tasks);
+
+  if (outputFilePath) {
+    const loader = spinner();
+    loader.start('');
+    loader.stop(`Build output: ${color.cyan(outputFilePath)}`);
+  }
+  outro('Success 🎉.');
 }
 
 function normalizeArgs(args: BuildFlags) {
@@ -32,6 +42,9 @@ function normalizeArgs(args: BuildFlags) {
     logger.warn(
       'Both "--tasks" and "--mode" parameters were passed. Using "--tasks" for building the app.'
     );
+  }
+  if (!args.mode) {
+    args.mode = 'debug';
   }
 }
 
