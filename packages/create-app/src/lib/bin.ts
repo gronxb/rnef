@@ -8,7 +8,7 @@ import {
 import {
   renameCommonFiles,
   renamePlaceholder,
-  rewritePackageJson,
+  sortDevDepsInPackageJson,
 } from './edit-template.js';
 import { copyDirSync, isEmptyDirSync, removeDir } from './fs.js';
 import { printLogo } from './logo.js';
@@ -92,10 +92,10 @@ export async function run() {
 
   const loader = spinner();
   loader.start('Updating template...');
-  rewritePackageJson(absoluteTargetDir, projectName, platforms);
+  sortDevDepsInPackageJson(absoluteTargetDir);
   renameCommonFiles(absoluteTargetDir);
   renamePlaceholder(absoluteTargetDir, projectName);
-  createConfig(absoluteTargetDir, platforms);
+  createConfig(absoluteTargetDir, platforms, plugins);
   loader.stop('Updated template.');
 
   printByeMessage(absoluteTargetDir);
@@ -160,17 +160,25 @@ async function extractPackage(absoluteTargetDir: string, pkg: TemplateInfo) {
   );
 }
 
-function createConfig(absoluteTargetDir: string, platforms: TemplateInfo[]) {
+function createConfig(
+  absoluteTargetDir: string,
+  platforms: TemplateInfo[],
+  plugins: TemplateInfo[]
+) {
   const rnefConfig = path.join(absoluteTargetDir, 'rnef.config.mjs');
-  fs.writeFileSync(rnefConfig, formatConfig(platforms));
+  fs.writeFileSync(rnefConfig, formatConfig(platforms, plugins));
 }
 
-export function formatConfig(platforms: TemplateInfo[]) {
+export function formatConfig(
+  platforms: TemplateInfo[],
+  plugins: TemplateInfo[]
+) {
   const platformsWithImports = platforms.filter(
     (template) => template.importName
   );
+  const pluginsWithImports = plugins.filter((template) => template.importName);
 
-  return `${platformsWithImports
+  return `${[...platformsWithImports, ...pluginsWithImports]
     .map(
       (template) =>
         `import { ${template.importName} } from '${template.packageName}';`
@@ -178,7 +186,11 @@ export function formatConfig(platforms: TemplateInfo[]) {
     .join('\n')}
 
 export default {
-  plugins: {},
+  plugins: {
+    ${pluginsWithImports
+      .map((template) => `${template.name}: ${template.importName}(),`)
+      .join('\n    ')}
+  },
   platforms: {
     ${platformsWithImports
       .map((template) => `${template.name}: ${template.importName}(),`)

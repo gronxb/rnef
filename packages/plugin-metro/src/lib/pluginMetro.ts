@@ -7,7 +7,7 @@ import {
 import { logger } from '@callstack/rnef-tools';
 
 type PluginConfig = {
-  root: string;
+  root?: string;
   reactNativeVersion: string;
   reactNativePath: string;
   platforms: {
@@ -63,11 +63,12 @@ export const pluginMetro =
   (pluginConfig: PluginConfig) =>
   (api: PluginApi): PluginOutput => {
     api.registerCommand({
-      name: 'dev',
+      name: 'start',
       description: 'Starts Metro dev server.',
       // @ts-expect-error todo fix this
       action: (args: StartCommandArgs) => {
-        startCommand.func(undefined, { ...pluginConfig }, args);
+        const root = api.getProjectRoot();
+        startCommand.func(undefined, { root, ...pluginConfig }, args);
       },
       options: startCommand.options,
     });
@@ -84,7 +85,8 @@ export const pluginMetro =
           );
           process.exit(1);
         }
-        bundleCommand.func(undefined, { ...pluginConfig }, args);
+        const root = api.getProjectRoot();
+        bundleCommand.func(undefined, { root, ...pluginConfig }, args);
       },
       options: bundleCommand.options,
     });

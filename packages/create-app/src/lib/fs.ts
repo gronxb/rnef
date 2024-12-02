@@ -25,9 +25,26 @@ export function copyDirSync(
     if (stat.isDirectory()) {
       copyDirSync(srcFile, distFile, { skipFiles });
     } else {
-      fs.copyFileSync(srcFile, distFile);
+      if (nodePath.basename(srcFile) === 'package.json') {
+        mergePackageJsons(srcFile, distFile);
+      } else {
+        fs.copyFileSync(srcFile, distFile);
+      }
     }
   }
+}
+
+function mergePackageJsons(from: string, to: string) {
+  const src = JSON.parse(fs.readFileSync(from, 'utf-8'));
+  if (!fs.existsSync(to)) {
+    fs.copyFileSync(from, to);
+  }
+  const dist = JSON.parse(fs.readFileSync(to, 'utf-8'));
+  // @todo consider adding a warning when src keys are different from dist keys
+  dist.scripts = { ...dist.scripts, ...src.scripts };
+  dist.devDependencies = { ...dist.devDependencies, ...src.devDependencies };
+
+  fs.writeFileSync(to, JSON.stringify(dist, null, 2));
 }
 
 export function removeDir(path: string) {
