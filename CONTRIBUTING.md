@@ -67,6 +67,36 @@ pnpm rnef start
 pnpm rnef run:android
 ```
 
+### Testing Create RNEF App project
+
+In order to test changes to `create-app` package, you need to run the following commands:
+
+```sh
+# Ensure fresh build
+nx reset
+pnpm build
+
+# Start local verdaccio registry (in one terminal), keep it open
+pnpm verdaccio:init
+
+# Publish packages to verdaccio (in another terminal)
+pnpm verdaccio:publish
+
+# Remove pnpm dlx cache, so that new version of package is used
+rm -rf ~/Library/Caches/pnpm/dlx/
+
+# Run tests
+pnpm e2e
+
+# Or Create RNEF app
+NPM_CONFIG_REGISTRY=http://localhost:4873 pnpm create @callstack/rnef-app --registry http://localhost:4873
+# Then use pnpm install with registry
+NPM_CONFIG_REGISTRY=http://localhost:4873 pnpm install
+
+# Clean up
+pnpm verdaccio-reset
+```
+
 ## Typechecking, linting and testing
 
 Currently we use TypeScript for typechecking, `eslint` with `prettier` for linting and formatting the code and `jest` for testing.

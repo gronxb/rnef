@@ -7,9 +7,25 @@ import {
   getTempDirectory,
 } from '@callstack/rnef-test-helpers';
 
-const CREATE_APP_PATH = path.resolve(__dirname, '../dist/src/bin.js');
-const TEMPLATES_DIR = path.resolve(__dirname, '../../../templates');
+/**
+ * Perform following commands to test e2e locally (on macOS):
+ * 1. nx reset
+ * pnpm build
+ * pnpm verdaccio:init (keep it running)
+ * rm -rf ~/Library/Caches/pnpm/dlx/
+ * pnpm e2e
+ */
+
+const VERDACCIO_REGISTRY_URL = 'http://localhost:4873';
+const CREATE_APP_COMMAND = `pnpm create @callstack/rnef-app`;
+
+const ROOT_DIR = path.resolve(__dirname, '../../..');
 const TEMP_DIR = getTempDirectory('e2e-deploys');
+
+const execArgs = {
+  cwd: TEMP_DIR,
+  env: { ...process.env, NPM_CONFIG_REGISTRY: VERDACCIO_REGISTRY_URL },
+};
 
 beforeEach(() => {
   mkdirSync(TEMP_DIR, { recursive: true });
@@ -28,14 +44,15 @@ describe('create-app command', { timeout: 30_000 }, () => {
       }
 
       await execAsync(
-        `node ${CREATE_APP_PATH} ${projectName} --template=default --platform=ios --platform=android --plugin=metro`,
-        { cwd: TEMP_DIR }
+        `${CREATE_APP_COMMAND} ${projectName} --template=default --platform=ios --platform=android --plugin=metro`,
+        execArgs
       );
 
       const packageJsonPath = path.join(projectPath, 'package.json');
       expect(existsSync(packageJsonPath)).toBe(true);
 
       const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+      // TODO: fix template application
       expect(packageJson.name).toBe(projectName);
       expect(packageJson.version).toBe('1.0.0');
       expect(packageJson.private).toBe(true);
@@ -47,10 +64,11 @@ describe('create-app command', { timeout: 30_000 }, () => {
       expect(packageJson.homepage).not.toBeDefined();
       expect(packageJson.keywords).not.toBeDefined();
       expect(packageJson.packageManager).not.toBeDefined();
+      expect(packageJson.publishConfig).not.toBeDefined();
     }
   );
 
-  it.skip('should create a new project from npm template', async () => {
+  it('should create a new project from npm template', async () => {
     const projectName = `test-npm-template-${getRandomString(6)}`;
     const projectPath = path.resolve(TEMP_DIR, projectName);
 
@@ -59,14 +77,15 @@ describe('create-app command', { timeout: 30_000 }, () => {
     }
 
     await execAsync(
-      `node ${CREATE_APP_PATH} ${projectName} --template=@callstack/repack --platform=ios --platform=android --plugin=metro`,
-      { cwd: TEMP_DIR }
+      `${CREATE_APP_COMMAND} ${projectName} --template=@callstack/rnef-template-default --platform=ios --platform=android --plugin=metro`,
+      execArgs
     );
 
     const packageJsonPath = path.join(projectPath, 'package.json');
     expect(existsSync(packageJsonPath)).toBe(true);
 
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    // TODO: fix template application
     expect(packageJson.name).toBe(projectName);
     expect(packageJson.version).toBe('1.0.0');
     expect(packageJson.private).toBe(true);
@@ -78,6 +97,7 @@ describe('create-app command', { timeout: 30_000 }, () => {
     expect(packageJson.homepage).not.toBeDefined();
     expect(packageJson.keywords).not.toBeDefined();
     expect(packageJson.packageManager).not.toBeDefined();
+    expect(packageJson.publishConfig).not.toBeDefined();
   });
 
   it(
@@ -91,16 +111,17 @@ describe('create-app command', { timeout: 30_000 }, () => {
         rmSync(projectPath, { recursive: true, force: true });
       }
 
-      const templatePath = `${TEMPLATES_DIR}/rnef-template-default`;
+      const templatePath = `${ROOT_DIR}/templates/rnef-template-default`;
       await execAsync(
-        `node ${CREATE_APP_PATH} ${projectName} --template="${templatePath}" --platform=ios --platform=android --plugin=metro`,
-        { cwd: TEMP_DIR }
+        `${CREATE_APP_COMMAND} ${projectName} --template="${templatePath}" --platform=ios --platform=android --plugin=metro`,
+        execArgs
       );
 
       const packageJsonPath = path.join(projectPath, 'package.json');
       expect(existsSync(packageJsonPath)).toBe(true);
 
       const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+      // TODO: fix template application
       expect(packageJson.name).toBe(projectName);
       expect(packageJson.version).toBe('1.0.0');
       expect(packageJson.private).toBe(true);
@@ -112,6 +133,7 @@ describe('create-app command', { timeout: 30_000 }, () => {
       expect(packageJson.homepage).not.toBeDefined();
       expect(packageJson.keywords).not.toBeDefined();
       expect(packageJson.packageManager).not.toBeDefined();
+      expect(packageJson.publishConfig).not.toBeDefined();
     }
   );
 });

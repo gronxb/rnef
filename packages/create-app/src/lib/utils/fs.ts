@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import nodePath from 'node:path';
+import { mergePackageJsons } from './package-json.js';
 
 export function isEmptyDirSync(path: string) {
   const files = fs.readdirSync(path);
@@ -34,21 +36,32 @@ export function copyDirSync(
   }
 }
 
-function mergePackageJsons(from: string, to: string) {
-  const src = JSON.parse(fs.readFileSync(from, 'utf-8'));
-  if (!fs.existsSync(to)) {
-    fs.copyFileSync(from, to);
-  }
-  const dist = JSON.parse(fs.readFileSync(to, 'utf-8'));
-  // @todo consider adding a warning when src keys are different from dist keys
-  dist.scripts = { ...dist.scripts, ...src.scripts };
-  dist.devDependencies = { ...dist.devDependencies, ...src.devDependencies };
-
-  fs.writeFileSync(to, JSON.stringify(dist, null, 2));
-}
-
-export function removeDir(path: string) {
+export function removeDirSync(path: string) {
   if (fs.existsSync(path)) {
     fs.rmSync(path, { recursive: true });
   }
+}
+
+export function walkDirectory(currentPath: string): string[] {
+  if (!fs.lstatSync(currentPath).isDirectory()) {
+    return [currentPath];
+  }
+
+  const childPaths = fs
+    .readdirSync(currentPath)
+    .flatMap((childName) => walkDirectory(path.join(currentPath, childName)));
+  return [currentPath, ...childPaths];
+}
+
+export function renameFile(filePath: string, oldName: string, newName: string) {
+  const newFileName = nodePath.join(
+    nodePath.dirname(filePath),
+    nodePath.basename(filePath).replaceAll(oldName, newName)
+  );
+
+  fs.renameSync(filePath, newFileName);
+}
+
+export function getNameWithoutExtension(filePath: string) {
+  return path.basename(filePath, path.extname(filePath));
 }

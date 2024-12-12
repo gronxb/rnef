@@ -1,28 +1,19 @@
-# path to a directory with all packages
-storage: ../tmp/local-registry/storage
+storage: /tmp/verdaccio-storage
 
-# a list of other known repositories we can talk to
 uplinks:
   npmjs:
     url: https://registry.npmjs.org/
-    maxage: 60m
 
 packages:
-  '**':
-    # give all users (including non-authenticated users) full access
-    # because it is a local registry
+  '@callstack/*':
     access: $all
     publish: $all
-    unpublish: $all
-
-    # if package is not available locally, proxy requests to npm registry
+  '**':
+    access: $all
     proxy: npmjs
 
-# log settings
+# This options does not seem to react to changes when used with `runServer()` node API
+# Maybe upgrade to Verdaccio 6.x will help
+# See: https://github.com/verdaccio/verdaccio/issues/3728
 logs:
-  type: stdout
-  format: pretty
-  level: warn
-
-publish:
-  allow_offline: true # set offline to true to allow publish offline
+  - { type: stdout, format: pretty, level: info }

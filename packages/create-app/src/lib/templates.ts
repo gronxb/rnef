@@ -1,9 +1,5 @@
-import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { resolveAbsolutePath } from '@callstack/rnef-tools';
-import packageJson from 'package-json';
-import * as tar from 'tar';
 
 export type TemplateInfo = NpmTemplateInfo | LocalTemplateInfo;
 
@@ -26,55 +22,50 @@ export type LocalTemplateInfo = {
   importName?: string;
 };
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const TEMP_PACKAGES_PATH = findPackagesDir();
-const TEMP_TEMPLATES_PATH = path.join(TEMP_PACKAGES_PATH, '../templates');
-
 export const TEMPLATES: TemplateInfo[] = [
   {
-    type: 'local',
+    type: 'npm',
     name: 'default',
     packageName: '@callstack/rnef-template-default',
-    localPath: path.join(TEMP_TEMPLATES_PATH, 'rnef-template-default'),
+    version: 'latest',
     directory: '.',
   },
 ];
 
 export const PLUGINS: TemplateInfo[] = [
   {
-    type: 'local',
+    type: 'npm',
     name: 'metro',
     packageName: '@callstack/rnef-plugin-metro',
-    localPath: path.join(TEMP_PACKAGES_PATH, 'plugin-metro'),
-    directory: 'src/template',
+    version: 'latest',
+    directory: 'template',
     importName: 'pluginMetro',
   },
   {
-    type: 'local',
+    type: 'npm',
     name: 'repack',
     packageName: '@callstack/rnef-plugin-repack',
-    localPath: path.join(TEMP_PACKAGES_PATH, 'plugin-repack'),
-    directory: 'src/template',
+    version: 'latest',
+    directory: 'template',
     importName: 'pluginRepack',
   },
 ];
 
 export const PLATFORMS: TemplateInfo[] = [
   {
-    type: 'local',
+    type: 'npm',
     name: 'ios',
     packageName: '@callstack/rnef-plugin-platform-ios',
-    localPath: path.join(TEMP_PACKAGES_PATH, 'plugin-platform-ios'),
-    directory: 'src/template',
+    version: 'latest',
+    directory: 'template',
     importName: 'pluginPlatformIOS',
   },
   {
-    type: 'local',
+    type: 'npm',
     name: 'android',
     packageName: '@callstack/rnef-plugin-platform-android',
-    localPath: path.join(TEMP_PACKAGES_PATH, 'plugin-platform-android'),
-    directory: 'src/template',
+    version: 'latest',
+    directory: 'template',
     importName: 'pluginPlatformAndroid',
   },
 ];
@@ -112,7 +103,7 @@ export function resolveTemplate(
     };
   }
 
-  // TODO: handle cases when template is github repo url
+  // @todo: handle cases when template is github repo url
 
   // Otherwise, assume it's a npm package
   return {
@@ -144,59 +135,4 @@ function getNpmLibraryName(name: string) {
     return splitName[0];
   }
   return name;
-}
-
-export async function downloadTarballFromNpm(
-  packageName: string,
-  version = 'latest',
-  targetDir: string
-) {
-  try {
-    const metadata = await packageJson(packageName, { version });
-
-    const tarballUrl = metadata['dist']?.tarball;
-    if (!tarballUrl) {
-      throw new Error('Tarball URL not found.');
-    }
-
-    const response = await fetch(tarballUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch package: ${response.statusText}`);
-    }
-
-    const tarballPath = path.join(
-      targetDir,
-      `${packageName.replace('/', '-')}.tgz`
-    );
-    // Write the tarball to disk
-    const arrayBuffer = await response.arrayBuffer();
-    fs.writeFileSync(tarballPath, Buffer.from(arrayBuffer));
-
-    return tarballPath;
-  } catch (error) {
-    console.error(`Error downloading package`, error);
-    throw error;
-  }
-}
-
-// This automatically handles both .tgz and .tar files
-export function extractTarballFile(tarballPath: string, targetDir: string) {
-  return tar.extract({
-    file: tarballPath,
-    cwd: targetDir,
-    strip: 1, // Remove the top-level directory
-  });
-}
-
-function findPackagesDir() {
-  let dir = __dirname;
-  while (dir !== '/') {
-    if (path.basename(dir) === 'packages') {
-      return dir;
-    }
-
-    dir = path.dirname(dir);
-  }
-
-  throw new Error('"packages" directory not found');
 }

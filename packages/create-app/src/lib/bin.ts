@@ -7,13 +7,13 @@ import {
 } from '@callstack/rnef-tools';
 import {
   renameCommonFiles,
-  renamePlaceholder,
-  sortDevDepsInPackageJson,
-} from './edit-template.js';
-import { copyDirSync, isEmptyDirSync, removeDir } from './fs.js';
-import { printLogo } from './logo.js';
-import { parseCliOptions } from './parse-cli-options.js';
-import { parsePackageInfo } from './parsers.js';
+  replacePlaceholder,
+} from './utils/edit-template.js';
+import { copyDirSync, isEmptyDirSync, removeDirSync } from './utils/fs.js';
+import { printLogo } from './utils/logo.js';
+import { parseCliOptions } from './utils/parse-cli-options.js';
+import { rewritePackageJson } from './utils/package-json.js';
+import { parsePackageInfo } from './utils/parsers.js';
 import {
   printHelpMessage,
   printVersionMessage,
@@ -24,16 +24,18 @@ import {
   promptTemplate,
   promptPlatforms,
   promptPlugins,
-} from './prompts.js';
+} from './utils/prompts.js';
 import {
-  downloadTarballFromNpm,
-  extractTarballFile,
   TemplateInfo,
   PLATFORMS,
-  resolveTemplate as resolveTemplate,
+  resolveTemplate,
   TEMPLATES,
   PLUGINS,
 } from './templates.js';
+import {
+  downloadTarballFromNpm,
+  extractTarballToTempDirectory,
+} from './utils/tarball.js';
 
 export async function run() {
   const options = parseCliOptions(process.argv.slice(2));
@@ -67,7 +69,7 @@ export async function run() {
     }
   }
 
-  removeDir(absoluteTargetDir);
+  removeDirSync(absoluteTargetDir);
   fs.mkdirSync(absoluteTargetDir, { recursive: true });
 
   const template = options.template
@@ -82,6 +84,8 @@ export async function run() {
     ? options.plugins.map((p) => resolveTemplate(PLUGINS, p))
     : await promptPlugins(PLUGINS);
 
+  const loader = spinner();
+  loader.start('Applying template, platforms and plugins');
   await extractPackage(absoluteTargetDir, template);
   for (const platform of platforms) {
     await extractPackage(absoluteTargetDir, platform);
@@ -90,24 +94,20 @@ export async function run() {
     await extractPackage(absoluteTargetDir, plugin);
   }
 
-  const loader = spinner();
-  loader.start('Updating template...');
-  sortDevDepsInPackageJson(absoluteTargetDir);
   renameCommonFiles(absoluteTargetDir);
-  renamePlaceholder(absoluteTargetDir, projectName);
+  replacePlaceholder(absoluteTargetDir, projectName);
+  rewritePackageJson(absoluteTargetDir, projectName);
   createConfig(absoluteTargetDir, platforms, plugins);
-  loader.stop('Updated template.');
+
+  loader.stop('Applied template, platforms and plugins.');
 
   printByeMessage(absoluteTargetDir);
 }
 
 async function extractPackage(absoluteTargetDir: string, pkg: TemplateInfo) {
-  const loader = spinner();
-
   let tarballPath: string | null = null;
   // NPM package: download tarball file
   if (pkg.type === 'npm') {
-    loader.start(`Downloading package ${pkg.packageName}@${pkg.version}...`);
     tarballPath = await downloadTarballFromNpm(
       pkg.packageName,
       pkg.version,
@@ -125,31 +125,26 @@ async function extractPackage(absoluteTargetDir: string, pkg: TemplateInfo) {
 
   // Extract tarball file: either from NPM or local one
   if (tarballPath) {
-    if (pkg.packageName) {
-      loader.message(`Extracting package ${pkg.name}...`);
-    } else {
-      loader.start(`Extracting package ${pkg.name}...`);
-    }
-
-    await extractTarballFile(tarballPath, absoluteTargetDir);
+    const localPath = await extractTarballToTempDirectory(
+      absoluteTargetDir,
+      tarballPath
+    );
 
     if (pkg.packageName) {
       fs.unlinkSync(tarballPath);
-      loader.stop(`Downloaded and extracted package ${pkg.packageName}.`);
-    } else {
-      loader.stop(`Extracted package ${pkg.name}.`);
     }
+
+    copyDirSync(path.join(localPath, pkg.directory ?? ''), absoluteTargetDir);
+    removeDirSync(localPath);
 
     return;
   }
 
   if (pkg.type === 'local') {
-    loader.start(`Copying local directory ${pkg.localPath}...`);
     copyDirSync(
       path.join(pkg.localPath, pkg.directory ?? ''),
       absoluteTargetDir
     );
-    loader.stop(`Copied local directory ${pkg.localPath}.`);
 
     return;
   }

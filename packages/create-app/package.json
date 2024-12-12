@@ -6,14 +6,19 @@
     "types": "./dist/src/index.d.ts",
     "import": "./dist/src/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "clean-dist": "rm -f dist/package.json",
+    "publish:verdaccio": "npm publish --registry http://localhost:4873 --userconfig ../../.npmrc",
     "e2e": "vitest --config vite.e2e.config.js"
   },
   "bin": {
     "create-rnef-app": "./dist/src/bin.js"
   },
   "dependencies": {
-    "@callstack/rnef-tools": "workspace:*",
+    "@callstack/rnef-tools": "^0.0.1",
     "@clack/prompts": "^0.8.1",
     "gradient-string": "^3.0.0",
     "minimist": "^1.2.8",
@@ -22,7 +27,7 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@callstack/rnef-test-helpers": "workspace:*",
+    "@callstack/rnef-test-helpers": "^0.0.1",
     "@types/gradient-string": "^1.1.6",
     "@types/minimist": "^1.2.5"
   }
