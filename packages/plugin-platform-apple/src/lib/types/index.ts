@@ -1,4 +1,4 @@
-import { supportedPlatforms } from './../supportedPlatforms.js';
+import { supportedPlatforms } from '../utils/supportedPlatforms.js';
 
 type ObjectValues<T> = T[keyof T];
 
@@ -7,14 +7,10 @@ export type ApplePlatform = ObjectValues<typeof supportedPlatforms>;
 export interface Device {
   name: string;
   udid: string;
-  state?: string;
-  availability?: string;
-  isAvailable?: boolean;
-  version?: string;
-  sdk?: string;
-  availabilityError?: string;
-  type?: DeviceType;
-  lastBootedAt?: string;
+  version: string; // e.g. visionOS 2.0
+  platform: ApplePlatform | undefined;
+  type: DeviceType;
+  state: 'Booted' | 'Shutdown';
 }
 
 export type DeviceType = 'simulator' | 'device';

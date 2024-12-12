@@ -1,21 +1,20 @@
 import type { BuildFlags } from './buildOptions.js';
-import { supportedPlatforms } from '../../supportedPlatforms.js';
+import { supportedPlatforms } from '../../utils/supportedPlatforms.js';
 import { ApplePlatform, XcodeProjectInfo } from '../../types/index.js';
 import { logger } from '@callstack/rnef-tools';
-import { getConfiguration } from './getConfiguration.js';
 import { simulatorDestinationMap } from './simulatorDestinationMap.js';
 import { spinner } from '@clack/prompts';
-import spawn from 'nano-spawn';
-import { selectFromInteractiveMode } from '../../utils/selectFromInteractiveMode.js';
-import path from 'node:path';
+import spawn, { SubprocessError } from 'nano-spawn';
 
-const buildProject = async (
+export const buildProject = async (
   xcodeProject: XcodeProjectInfo,
+  sourceDir: string,
   platformName: ApplePlatform,
   udid: string | undefined,
+  scheme: string,
+  mode: string,
   args: BuildFlags
 ) => {
-  normalizeArgs(args, xcodeProject);
   const simulatorDest = simulatorDestinationMap[platformName];
 
   if (!simulatorDest) {
@@ -25,15 +24,6 @@ const buildProject = async (
       ).join(', ')}.`
     );
   }
-
-  const { scheme, mode } = args.interactive
-    ? await selectFromInteractiveMode(xcodeProject, args.scheme, args.mode)
-    : await getConfiguration(
-        xcodeProject,
-        args.scheme,
-        args.mode,
-        platformName
-      );
 
   const xcodebuildArgs = [
     xcodeProject.isWorkspace ? '-workspace' : '-project',
@@ -56,7 +46,9 @@ const buildProject = async (
         }
       }
 
-      return udid
+      return args.catalyst
+        ? 'platform=macOS,variant=Mac Catalyst'
+        : udid
         ? `id=${udid}`
         : mode === 'Debug' || args.device
         ? `generic/platform=${simulatorDest}`
@@ -74,33 +66,22 @@ const buildProject = async (
     `Builing the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
   );
   logger.debug(`Running "xcodebuild ${xcodebuildArgs.join(' ')}.`);
-
   try {
-    await spawn('xcodebuild', xcodebuildArgs, {
-      stdio: logger.isVerbose() ? 'inherit' : ['ignore', 'ignore', 'inherit'],
+    const { output } = await spawn('xcodebuild', xcodebuildArgs, {
+      cwd: sourceDir,
     });
     loader.stop(
       `Built the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
     );
+    return output;
   } catch (error) {
+    logger.log('');
+    logger.log((error as SubprocessError).stdout);
+    logger.error((error as SubprocessError).stderr);
     loader.stop(
       'Running xcodebuild failed. Check the error message above for details.',
       1
     );
-    throw error;
+    throw new Error('Running xcodebuild failed');
   }
 };
-
-function normalizeArgs(args: BuildFlags, xcodeProject: XcodeProjectInfo) {
-  if (!args.mode) {
-    args.mode = 'Debug';
-  }
-  if (!args.scheme) {
-    args.scheme = path.basename(
-      xcodeProject.name,
-      path.extname(xcodeProject.name)
-    );
-  }
-}
-
-export { buildProject };

@@ -1,0 +1,88 @@
+import { logger } from '@callstack/rnef-tools';
+import { getBuildPath } from './getBuildPath.js';
+import { getBuildSettings } from './getBuildSettings.js';
+import path from 'path';
+import { ApplePlatform, XcodeProjectInfo } from '../../types/index.js';
+import spawn, { SubprocessError } from 'nano-spawn';
+
+type Options = {
+  buildOutput: string;
+  xcodeProject: XcodeProjectInfo;
+  sourceDir: string;
+  mode: string;
+  scheme: string;
+  target?: string;
+  udid: string;
+  binaryPath?: string;
+  platform: ApplePlatform;
+};
+
+export default async function installApp({
+  buildOutput,
+  xcodeProject,
+  sourceDir,
+  mode,
+  scheme,
+  target,
+  udid,
+  binaryPath,
+  platform,
+}: Options) {
+  let appPath = binaryPath;
+
+  const buildSettings = await getBuildSettings(
+    xcodeProject,
+    sourceDir,
+    mode,
+    buildOutput,
+    scheme,
+    target
+  );
+
+  if (!buildSettings) {
+    throw new Error('Failed to get build settings for your project');
+  }
+
+  if (!appPath) {
+    appPath = getBuildPath(buildSettings, platform);
+  }
+
+  const targetBuildDir = buildSettings.TARGET_BUILD_DIR;
+  const infoPlistPath = buildSettings.INFOPLIST_PATH;
+
+  if (!infoPlistPath) {
+    throw new Error('Failed to find Info.plist');
+  }
+
+  if (!targetBuildDir) {
+    throw new Error('Failed to get target build directory.');
+  }
+
+  logger.debug(`Installing "${path.basename(appPath)}"`);
+
+  if (udid && appPath) {
+    await spawn('xcrun', ['simctl', 'install', udid, appPath], {
+      stdio: logger.isVerbose() ? 'inherit' : ['ignore', 'pipe', 'inherit'],
+    });
+  }
+
+  const { stdout } = await spawn('/usr/libexec/PlistBuddy', [
+    '-c',
+    'Print:CFBundleIdentifier',
+    path.join(targetBuildDir, infoPlistPath),
+  ]);
+  const bundleID = stdout.trim();
+
+  logger.debug(`Launching "${bundleID}"`);
+
+  try {
+    await spawn('xcrun', ['simctl', 'launch', udid, bundleID]);
+  } catch (error) {
+    logger.error(
+      `Failed to launch the app on simulator. ${
+        (error as SubprocessError).stderr
+      }`
+    );
+    throw error;
+  }
+}

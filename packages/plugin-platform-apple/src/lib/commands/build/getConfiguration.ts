@@ -7,15 +7,13 @@ import color from 'picocolors';
 
 export async function getConfiguration(
   xcodeProject: XcodeProjectInfo,
+  sourceDir: string,
   inputScheme: string,
   inputMode: string,
   platformName: ApplePlatform
 ) {
-  const sourceDir = process.cwd();
   const info = await getInfo(xcodeProject, sourceDir);
-
   checkIfConfigurationExists(info?.configurations ?? [], inputMode);
-
   let scheme = inputScheme;
 
   if (!info?.schemes?.includes(scheme)) {
