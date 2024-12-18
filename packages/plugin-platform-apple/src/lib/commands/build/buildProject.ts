@@ -78,6 +78,11 @@ export const buildProject = async (
     logger.log('');
     logger.log((error as SubprocessError).stdout);
     logger.error((error as SubprocessError).stderr);
+    if (!xcodeProject.isWorkspace) {
+      logger.error(
+        `If your project uses CocoaPods, make sure to install pods with "pod install" in ${sourceDir} directory.`
+      );
+    }
     loader.stop(
       'Running xcodebuild failed. Check the error message above for details.',
       1
