@@ -8,6 +8,7 @@
   },
   "scripts": {
     "clean-dist": "rm -f dist/package.json",
+    "publish:npm": "npm publish --access restricted",
     "publish:verdaccio": "npm publish --registry http://localhost:4873 --userconfig ../../.npmrc"
   },
   "dependencies": {
@@ -17,5 +18,8 @@
     "is-unicode-supported": "^2.1.0",
     "picocolors": "^1.1.1",
     "tslib": "^2.3.0"
+  },
+  "publishConfig": {
+    "access": "restricted"
   }
 }

@@ -10,10 +10,6 @@ inputs:
     description: The workspace scheme to build
     required: false
     default: "HelloWorld"
-  architectures:
-    description: The architectures to build for
-    required: false
-    default: "arm64 x86_64"
 
 outputs:
   artifact-url:
@@ -31,7 +27,7 @@ runs:
 
     - name: Set variables
       run: |
-        echo "ARTIFACT_NAME=${{inputs.scheme}}-${{inputs.architectures}}-${{ steps.fingerprint.outputs.hash}}.tar.gz" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=${{inputs.scheme}}-${{ steps.fingerprint.outputs.hash}}.tar.gz" >> $GITHUB_ENV
       shell: bash
 
     - name: Find artifact URL
@@ -41,7 +37,7 @@ runs:
         name: ${{ env.ARTIFACT_NAME }}
 
     - name: Post Cached Build (if found)
-      if: steps.cached-url.outputs.artifact-url
+      if: ${{ steps.cached-url.outputs.artifact-url && github.event_name == 'pull_request' }}
       uses: ./.github/actions/rnef-post-build
       with:
         platform: iOS Simulator
@@ -58,7 +54,7 @@ runs:
       if: ${{ !steps.cached-url.outputs.artifact-url }}
       run: |
         cd ios
-        pnpm rnef build:ios
+        npx rnef build:ios
       shell: bash
 
     - name: Prepare Artifact
@@ -80,7 +76,7 @@ runs:
         if-no-files-found: error
 
     - name: Post Build
-      if: ${{ !steps.cached-url.outputs.artifact-url }}
+      if: ${{ !steps.cached-url.outputs.artifact-url && github.event_name == 'pull_request' }}
       uses: ./.github/actions/rnef-post-build
       with:
         platform: iOS Simulator

@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "clean-dist": "rm -f dist/package.json",
+    "publish:npm": "npm publish --access restricted",
     "publish:verdaccio": "npm publish --registry http://localhost:4873 --userconfig ../../.npmrc"
   },
   "dependencies": {
@@ -28,5 +29,8 @@
     "@rspack/plugin-react-refresh": "^1.0.0",
     "@swc/helpers": "^0.5.15",
     "babel-loader": "^9.2.1"
+  },
+  "publishConfig": {
+    "access": "restricted"
   }
 }

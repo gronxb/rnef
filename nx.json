@@ -26,6 +26,12 @@
           "outDir": "packages/{projectRoot}/dist"
         }
       }
+    },
+    "publish:npm": {
+      "dependsOn": ["build"]
+    },
+    "verdaccio:publish": {
+      "dependsOn": ["build"]
     }
   },
   "release": {
