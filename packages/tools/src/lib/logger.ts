@@ -1,3 +1,4 @@
+import util from 'node:util';
 import { log as clackLog } from '@clack/prompts';
 import color from 'picocolors';
 import isUnicodeSupported from 'is-unicode-supported';
@@ -11,42 +12,38 @@ const SYMBOL_DEBUG = unicodeWithFallback('●', '•');
 
 let verbose = false;
 
-const formatMessages = (messages: Array<string>) => messages.join(' ');
-
-const mapLines = (text: string, colorFn: (line: string) => string) =>
-  text.split('\n').map(colorFn).join('\n');
-
-const success = (...messages: Array<string>) => {
-  const output = formatMessages(messages);
+const success = (...messages: Array<unknown>) => {
+  const output = util.format(...messages);
   clackLog.success(output);
 };
 
-const info = (...messages: Array<string>) => {
-  const output = formatMessages(messages);
+const info = (...messages: Array<unknown>) => {
+  const output = util.format(...messages);
   clackLog.info(output);
 };
 
-const warn = (...messages: Array<string>) => {
-  const output = formatMessages(messages);
+const warn = (...messages: Array<unknown>) => {
+  const output = util.format(...messages);
   clackLog.warn(mapLines(output, color.yellow));
 };
 
-const error = (...messages: Array<string>) => {
-  const output = formatMessages(messages);
+const error = (...messages: Array<unknown>) => {
+  const output = util.format(...messages);
   clackLog.error(mapLines(output, color.red));
 };
 
-const debug = (...messages: Array<string>) => {
+const log = (...messages: Array<unknown>) => {
+  const output = util.format(...messages);
+  clackLog.step(output);
+};
+
+const debug = (...messages: Array<unknown>) => {
   if (verbose) {
-    const output = formatMessages(messages);
+    const output = util.format(...messages);
     clackLog.message(mapLines(output, color.dim), {
       symbol: color.dim(SYMBOL_DEBUG),
     });
   }
-};
-
-const log = (...messages: Array<string>) => {
-  clackLog.step(formatMessages(messages));
 };
 
 const setVerbose = (level: boolean) => {
@@ -65,3 +62,7 @@ export default {
   setVerbose,
   isVerbose,
 };
+
+function mapLines(text: string, colorFn: (line: string) => string) {
+  return text.split('\n').map(colorFn).join('\n');
+}
