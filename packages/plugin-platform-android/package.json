@@ -1,6 +1,6 @@
 {
   "name": "@rnef/plugin-platform-android",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "exports": {
     "types": "./dist/src/index.d.ts",
@@ -20,7 +20,7 @@
   "dependencies": {
     "@clack/prompts": "^0.9.0",
     "@react-native-community/cli-config-android": "^16.0.2",
-    "@rnef/tools": "^0.0.1",
+    "@rnef/tools": "^0.0.2",
     "is-interactive": "^2.0.0",
     "nano-spawn": "^0.2.0",
     "picocolors": "^1.1.1",
@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@react-native-community/cli-types": "^16.0.2",
-    "@rnef/config": "^0.0.1"
+    "@rnef/config": "^0.0.2"
   },
   "publishConfig": {
     "access": "restricted"
