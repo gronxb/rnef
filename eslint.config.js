@@ -29,7 +29,7 @@ export default [
     rules: {},
   },
   {
-    ignores: ['**/template/**/*.mjs', '**/__fixtures__/**'],
+    ignores: ['**/template/**/*.mjs', '**/dist/**', '**/__fixtures__/**'],
   },
   {
     files: ['**/*.json'],

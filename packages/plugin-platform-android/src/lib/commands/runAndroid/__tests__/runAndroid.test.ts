@@ -1,10 +1,10 @@
 import fs, { PathLike } from 'node:fs';
 import { vi, test, Mock } from 'vitest';
+import { logger } from '@rnef/tools';
 import { AndroidProjectConfig } from '@react-native-community/cli-types';
 import { select } from '@clack/prompts';
 import spawn from 'nano-spawn';
 import { runAndroid, type Flags } from '../runAndroid.js';
-import { logger } from '@rnef/tools';
 
 const actualFs = await vi.importMock('node:fs');
 
@@ -35,6 +35,9 @@ vi.mock('@clack/prompts', () => {
     isCancel: vi.fn(() => false),
     intro: vi.fn(),
     outro: mocks.outroMock,
+    log: {
+      warn: vi.fn(),
+    },
   };
 });
 
@@ -48,6 +51,7 @@ const args: Flags = {
   appIdSuffix: '',
   mainActivity: undefined,
   port: '8081',
+  remoteCache: false,
 };
 const androidProject: AndroidProjectConfig = {
   appName: 'app',

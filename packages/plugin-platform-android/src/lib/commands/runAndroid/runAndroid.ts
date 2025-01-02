@@ -1,21 +1,22 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import {
   AndroidProjectConfig,
   Config,
 } from '@react-native-community/cli-types';
 import { checkCancelPrompt, logger, RnefError } from '@rnef/tools';
+import { intro, outro, select } from '@clack/prompts';
+import isInteractive from 'is-interactive';
 import { getDevices } from './adb.js';
 import { toPascalCase } from '../toPascalCase.js';
 import { tryLaunchAppOnDevice } from './tryLaunchAppOnDevice.js';
 import { tryInstallAppOnDevice } from './tryInstallAppOnDevice.js';
 import { listAndroidDevices, DeviceData } from './listAndroidDevices.js';
 import { tryLaunchEmulator } from './tryLaunchEmulator.js';
-import path from 'path';
+import path from 'node:path';
 import { BuildFlags, options } from '../buildAndroid/buildAndroid.js';
 import { promptForTaskSelection } from '../listAndroidTasks.js';
 import { runGradle } from '../runGradle.js';
-import { outro, select } from '@clack/prompts';
-import isInteractive from 'is-interactive';
+import { fetchCachedBuild } from './fetchCachedBuild.js';
 
 export interface Flags extends BuildFlags {
   appId: string;
@@ -25,6 +26,7 @@ export interface Flags extends BuildFlags {
   device?: string;
   binaryPath?: string;
   user?: string;
+  remoteCache: boolean;
 }
 
 export type AndroidProject = NonNullable<Config['project']['android']>;
@@ -37,6 +39,8 @@ export async function runAndroid(
   args: Flags,
   projectRoot: string
 ) {
+  intro('Running Android app');
+
   normalizeArgs(args, projectRoot);
 
   const { deviceId } = args.interactive
@@ -47,6 +51,14 @@ export async function runAndroid(
   const tasks = args.interactive
     ? [await promptForTaskSelection(mainTaskType, androidProject.sourceDir)]
     : [...(args.tasks ?? []), `${mainTaskType}${toPascalCase(args.mode)}`];
+
+  if (!args.binaryPath && args.remoteCache) {
+    const cachedBuild = await fetchCachedBuild({ mode: args.mode });
+    if (cachedBuild) {
+      // @todo replace with a more generic way to pass binary path
+      args.binaryPath = cachedBuild.binaryPath;
+    }
+  }
 
   if (deviceId) {
     await runGradle({ tasks, androidProject, args });
@@ -63,7 +75,7 @@ export async function runAndroid(
         await selectAndLaunchDevice();
       } else {
         logger.debug(
-          'No booted devices or emulators found. Launching first available mulator...'
+          'No booted devices or emulators found. Launching first available emulator.'
         );
         await tryLaunchEmulator();
       }
@@ -72,6 +84,9 @@ export async function runAndroid(
     await runGradle({ tasks, androidProject, args });
 
     for (const device of await getDevices()) {
+      if (args.binaryPath) {
+        await tryInstallAppOnDevice(device, androidProject, args, tasks);
+      }
       await tryLaunchAppOnDevice(device, androidProject, args);
     }
   }
@@ -193,5 +208,9 @@ export const runOptions = [
   {
     name: '--user <number>',
     description: 'Id of the User Profile you want to install the app on.',
+  },
+  {
+    name: '--no-remote-cache',
+    description: 'Do not use remote build cacheing.',
   },
 ];

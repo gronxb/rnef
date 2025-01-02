@@ -13,10 +13,15 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.9.0",
-    "@expo/fingerprint": "^0.11.2",
+    "@expo/fingerprint": "^0.11.6",
+    "@types/adm-zip": "^0.5.7",
+    "adm-zip": "^0.5.16",
     "appdirsjs": "^1.2.7",
     "is-unicode-supported": "^2.1.0",
+    "nano-spawn": "^0.2.0",
+    "octokit": "^4.0.2",
     "picocolors": "^1.1.1",
+    "ts-regex-builder": "^1.8.2",
     "tslib": "^2.3.0"
   },
   "publishConfig": {
