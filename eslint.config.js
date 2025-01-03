@@ -1,5 +1,6 @@
 import nx from '@nx/eslint-plugin';
 import jsoncParser from 'jsonc-eslint-parser';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
 
 export default [
   ...nx.configs['flat/base'],
@@ -8,6 +9,7 @@ export default [
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     rules: {
+      '@typescript-eslint/consistent-type-imports': 'error',
       '@nx/enforce-module-boundaries': [
         'error',
         {
@@ -19,6 +21,19 @@ export default [
               onlyDependOnLibsWithTags: ['*'],
             },
           ],
+        },
+      ],
+    },
+  },
+  {
+    plugins: {
+      'simple-import-sort': simpleImportSort,
+    },
+    rules: {
+      'simple-import-sort/imports': [
+        'error',
+        {
+          groups: [['^\\u0000', '^node:', '^@?\\w', '^', '^\\.']],
         },
       ],
     },

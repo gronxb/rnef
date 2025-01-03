@@ -1,13 +1,12 @@
-import type { PluginOutput, PluginApi } from '@rnef/config';
+import { getProjectConfig } from '@react-native-community/cli-config-apple';
+import type { PluginApi, PluginOutput } from '@rnef/config';
+import type { BuildFlags, RunFlags } from '@rnef/plugin-platform-apple';
 import {
   createBuild,
   createRun,
-  getRunOptions,
   getBuildOptions,
-  RunFlags,
-  BuildFlags,
+  getRunOptions,
 } from '@rnef/plugin-platform-apple';
-import { getProjectConfig } from '@react-native-community/cli-config-apple';
 import { RnefError } from '@rnef/tools';
 
 const projectConfig = getProjectConfig({ platformName: 'ios' });

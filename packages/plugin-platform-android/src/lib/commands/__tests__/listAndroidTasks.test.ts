@@ -1,11 +1,12 @@
-import color from 'picocolors';
+import { select } from '@clack/prompts';
 import spawn from 'nano-spawn';
+import color from 'picocolors';
+import type { Mock, MockedFunction } from 'vitest';
+import { describe, it, vi } from 'vitest';
 import {
   parseTasksFromGradleFile,
   promptForTaskSelection,
 } from '../listAndroidTasks.js';
-import { it, describe, vi, Mock, MockedFunction } from 'vitest';
-import { select } from '@clack/prompts';
 
 vi.mock('nano-spawn', () => {
   return {

@@ -1,11 +1,13 @@
-import fs, { PathLike } from 'node:fs';
-import { vi, test, Mock, MockedFunction } from 'vitest';
-import { AndroidProjectConfig } from '@react-native-community/cli-types';
+import type { PathLike } from 'node:fs';
+import fs from 'node:fs';
+import { select } from '@clack/prompts';
+import type { AndroidProjectConfig } from '@react-native-community/cli-types';
 import { logger } from '@rnef/tools';
 import spawn from 'nano-spawn';
-import { select } from '@clack/prompts';
-import { buildAndroid, type BuildFlags } from '../buildAndroid.js';
 import color from 'picocolors';
+import type { Mock, MockedFunction } from 'vitest';
+import { test, vi } from 'vitest';
+import { buildAndroid, type BuildFlags } from '../buildAndroid.js';
 
 const actualFs = await vi.importMock('node:fs');
 

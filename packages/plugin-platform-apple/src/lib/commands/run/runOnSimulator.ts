@@ -1,10 +1,14 @@
-import { ApplePlatform, Device, XcodeProjectInfo } from '../../types/index.js';
-import { buildProject } from '../build/buildProject.js';
-import installApp from './installApp.js';
-import { RunFlags } from './runOptions.js';
-import spawn from 'nano-spawn';
 import { spinner } from '@clack/prompts';
+import spawn from 'nano-spawn';
+import type {
+  ApplePlatform,
+  Device,
+  XcodeProjectInfo,
+} from '../../types/index.js';
+import { buildProject } from '../build/buildProject.js';
 import { fetchCachedBuild } from './fetchCachedBuild.js';
+import installApp from './installApp.js';
+import type { RunFlags } from './runOptions.js';
 
 export async function runOnSimulator(
   simulator: Device,

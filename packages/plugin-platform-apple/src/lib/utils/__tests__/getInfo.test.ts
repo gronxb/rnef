@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, Mock } from 'vitest';
+import * as fs from 'node:fs';
 import spawn from 'nano-spawn';
-import * as fs from 'fs';
+import type { Mock } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { XcodeProjectInfo } from '../../types/index.js';
 import { getInfo } from '../getInfo.js';
-import { XcodeProjectInfo } from '../../types/index.js';
 
 vi.mock('nano-spawn', () => {
   return {

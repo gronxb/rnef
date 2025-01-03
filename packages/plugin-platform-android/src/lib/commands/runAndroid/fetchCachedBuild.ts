@@ -1,5 +1,7 @@
+import path from 'node:path';
+import { spinner } from '@clack/prompts';
+import type { LocalBuild } from '@rnef/tools';
 import {
-  LocalBuild,
   createRemoteBuildCache,
   findFilesWithPattern,
   formatArtifactName,
@@ -7,8 +9,6 @@ import {
   nativeFingerprint,
   queryLocalBuildCache,
 } from '@rnef/tools';
-import { spinner } from '@clack/prompts';
-import path from 'node:path';
 import color from 'picocolors';
 
 export type FetchCachedBuildOptions = {

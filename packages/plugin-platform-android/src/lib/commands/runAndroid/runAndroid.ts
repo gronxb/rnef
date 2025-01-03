@@ -1,22 +1,24 @@
 import fs from 'node:fs';
-import {
+import path from 'node:path';
+import { intro, outro, select } from '@clack/prompts';
+import type {
   AndroidProjectConfig,
   Config,
 } from '@react-native-community/cli-types';
 import { checkCancelPrompt, logger, RnefError } from '@rnef/tools';
-import { intro, outro, select } from '@clack/prompts';
 import isInteractive from 'is-interactive';
-import { getDevices } from './adb.js';
-import { toPascalCase } from '../toPascalCase.js';
-import { tryLaunchAppOnDevice } from './tryLaunchAppOnDevice.js';
-import { tryInstallAppOnDevice } from './tryInstallAppOnDevice.js';
-import { listAndroidDevices, DeviceData } from './listAndroidDevices.js';
-import { tryLaunchEmulator } from './tryLaunchEmulator.js';
-import path from 'node:path';
-import { BuildFlags, options } from '../buildAndroid/buildAndroid.js';
+import type { BuildFlags } from '../buildAndroid/buildAndroid.js';
+import { options } from '../buildAndroid/buildAndroid.js';
 import { promptForTaskSelection } from '../listAndroidTasks.js';
 import { runGradle } from '../runGradle.js';
+import { toPascalCase } from '../toPascalCase.js';
+import { getDevices } from './adb.js';
 import { fetchCachedBuild } from './fetchCachedBuild.js';
+import type { DeviceData } from './listAndroidDevices.js';
+import { listAndroidDevices } from './listAndroidDevices.js';
+import { tryInstallAppOnDevice } from './tryInstallAppOnDevice.js';
+import { tryLaunchAppOnDevice } from './tryLaunchAppOnDevice.js';
+import { tryLaunchEmulator } from './tryLaunchEmulator.js';
 
 export interface Flags extends BuildFlags {
   appId: string;

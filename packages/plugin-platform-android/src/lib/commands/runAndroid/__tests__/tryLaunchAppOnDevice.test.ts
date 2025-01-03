@@ -1,9 +1,9 @@
-import { AndroidProjectConfig } from '@react-native-community/cli-types';
-import { tryLaunchAppOnDevice } from '../tryLaunchAppOnDevice.js';
-import type { Flags } from '../runAndroid.js';
+import type { AndroidProjectConfig } from '@react-native-community/cli-types';
 import spawn from 'nano-spawn';
-import { vi, test } from 'vitest';
-import { DeviceData } from '../listAndroidDevices.js';
+import { test, vi } from 'vitest';
+import type { DeviceData } from '../listAndroidDevices.js';
+import type { Flags } from '../runAndroid.js';
+import { tryLaunchAppOnDevice } from '../tryLaunchAppOnDevice.js';
 
 vi.mock('nano-spawn', () => {
   return {

@@ -1,10 +1,12 @@
-import fs, { PathLike } from 'node:fs';
-import { vi, test, Mock } from 'vitest';
-import { logger } from '@rnef/tools';
-import { AndroidProjectConfig } from '@react-native-community/cli-types';
+import type { PathLike } from 'node:fs';
+import fs from 'node:fs';
 import { select } from '@clack/prompts';
+import type { AndroidProjectConfig } from '@react-native-community/cli-types';
+import { logger } from '@rnef/tools';
 import spawn from 'nano-spawn';
-import { runAndroid, type Flags } from '../runAndroid.js';
+import type { Mock } from 'vitest';
+import { test, vi } from 'vitest';
+import { type Flags, runAndroid } from '../runAndroid.js';
 
 const actualFs = await vi.importMock('node:fs');
 

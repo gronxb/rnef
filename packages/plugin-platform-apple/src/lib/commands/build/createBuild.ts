@@ -1,16 +1,16 @@
-import { BuildFlags } from './buildOptions.js';
-import { buildProject } from './buildProject.js';
-import {
+import path from 'node:path';
+import { cancel, outro } from '@clack/prompts';
+import { logger, RnefError } from '@rnef/tools';
+import isInteractive from 'is-interactive';
+import type {
   BuilderCommand,
   ProjectConfig,
   XcodeProjectInfo,
 } from '../../types/index.js';
-import { logger, RnefError } from '@rnef/tools';
-import { outro, cancel } from '@clack/prompts';
-import path from 'path';
 import { selectFromInteractiveMode } from '../../utils/selectFromInteractiveMode.js';
+import type { BuildFlags } from './buildOptions.js';
+import { buildProject } from './buildProject.js';
 import { getConfiguration } from './getConfiguration.js';
-import isInteractive from 'is-interactive';
 
 export const createBuild = async (
   platformName: BuilderCommand['platformName'],
