@@ -1,8 +1,10 @@
+import path from 'node:path';
 import { spinner } from '@clack/prompts';
 import { logger, RnefError } from '@rnef/tools';
 import type { SubprocessError } from 'nano-spawn';
 import spawn from 'nano-spawn';
 import type { ApplePlatform, XcodeProjectInfo } from '../../types/index.js';
+import { getBuildPaths } from '../../utils/buildPaths.js';
 import { supportedPlatforms } from '../../utils/supportedPlatforms.js';
 import type { BuildFlags } from './buildOptions.js';
 import { simulatorDestinationMap } from './simulatorDestinationMap.js';
@@ -58,13 +60,33 @@ export const buildProject = async (
     })(),
   ];
 
+  // TODO: handle case when someone pass --buildFolder
+
+  if (args.archive) {
+    const { archiveDir, derivedDir } = getBuildPaths(platformName);
+    const archiveName = `${xcodeProject.name.replace(
+      '.xcworkspace',
+      ''
+    )}.xcarchive`;
+
+    xcodebuildArgs.push(
+      '-derivedDataPath',
+      derivedDir,
+      '-archivePath',
+      path.join(archiveDir, archiveName),
+      'archive'
+    );
+  }
+
   if (args.extraParams) {
     xcodebuildArgs.push(...args.extraParams);
   }
 
   const loader = spinner();
   loader.start(
-    `Builing the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
+    `${
+      args.archive ? 'Archiving' : 'Building'
+    } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
   );
   logger.debug(`Running "xcodebuild ${xcodebuildArgs.join(' ')}.`);
   try {
@@ -73,7 +95,9 @@ export const buildProject = async (
       stdio: logger.isVerbose() ? 'inherit' : ['ignore', 'pipe', 'pipe'],
     });
     loader.stop(
-      `Built the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
+      `${
+        args.archive ? 'Archived' : 'Built'
+      } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
     );
     return output;
   } catch (error) {

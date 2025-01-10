@@ -1,15 +1,18 @@
 import path from 'node:path';
-import { cancel, outro } from '@clack/prompts';
+import { outro } from '@clack/prompts';
 import { logger, RnefError } from '@rnef/tools';
 import isInteractive from 'is-interactive';
+import { dim } from 'picocolors';
 import type {
   BuilderCommand,
   ProjectConfig,
   XcodeProjectInfo,
 } from '../../types/index.js';
+import { getBuildPaths } from '../../utils/buildPaths.js';
 import { selectFromInteractiveMode } from '../../utils/selectFromInteractiveMode.js';
 import type { BuildFlags } from './buildOptions.js';
 import { buildProject } from './buildProject.js';
+import { exportArchive } from './exportArchive.js';
 import { getConfiguration } from './getConfiguration.js';
 
 export const createBuild = async (
@@ -54,15 +57,39 @@ export const createBuild = async (
       mode,
       args
     );
+
+    const { archiveDir } = getBuildPaths(platformName);
+
+    const archivePath = path.join(
+      archiveDir,
+      `${xcodeProject.name.replace('.xcworkspace', '')}.xcarchive`
+    );
+
+    if (args.archive) {
+      await exportArchive({
+        sourceDir,
+        archivePath,
+        scheme,
+        mode,
+        platformName,
+      });
+    }
     outro('Success 🎉.');
-  } catch {
-    cancel('Command failed.');
+  } catch (error) {
+    throw new RnefError('Failed to create build', { cause: error });
   }
 };
 
 function normalizeArgs(args: BuildFlags, xcodeProject: XcodeProjectInfo) {
   if (!args.mode) {
+    logger.debug('Setting build mode to Debug by default');
     args.mode = 'Debug';
+  }
+  if (args.archive && !args.mode) {
+    logger.debug(
+      'Setting build mode to Release, because --archive flag was used'
+    );
+    args.mode = 'Release';
   }
   if (!args.scheme) {
     args.scheme = path.basename(
