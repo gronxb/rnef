@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { spinner } from '@clack/prompts';
-import { logger, RnefError } from '@rnef/tools';
+import { logger, RnefError, setupChildProcessCleanup } from '@rnef/tools';
 import type { SubprocessError } from 'nano-spawn';
 import spawn from 'nano-spawn';
 import type { ApplePlatform, XcodeProjectInfo } from '../../types/index.js';
@@ -90,10 +90,12 @@ export const buildProject = async (
   );
   logger.debug(`Running "xcodebuild ${xcodebuildArgs.join(' ')}.`);
   try {
-    const { output } = await spawn('xcodebuild', xcodebuildArgs, {
+    const childProcess = spawn('xcodebuild', xcodebuildArgs, {
       cwd: sourceDir,
       stdio: logger.isVerbose() ? 'inherit' : ['ignore', 'pipe', 'pipe'],
     });
+    setupChildProcessCleanup(childProcess);
+    const { output } = await childProcess;
     loader.stop(
       `${
         args.archive ? 'Archived' : 'Built'
