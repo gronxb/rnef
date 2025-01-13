@@ -83,11 +83,20 @@ export const buildProject = async (
   }
 
   const loader = spinner();
-  loader.start(
-    `${
-      args.archive ? 'Archiving' : 'Building'
-    } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
-  );
+  if (!logger.isVerbose()) {
+    loader.start(
+      `${
+        args.archive ? 'Archiving' : 'Building'
+      } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
+    );
+  } else {
+    // @todo abstract loader to fall back to logger in non-tty mode.
+    logger.info(
+      `${
+        args.archive ? 'Archiving' : 'Building'
+      } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
+    );
+  }
   logger.debug(`Running "xcodebuild ${xcodebuildArgs.join(' ')}.`);
   try {
     const childProcess = spawn('xcodebuild', xcodebuildArgs, {
@@ -96,19 +105,29 @@ export const buildProject = async (
     });
     setupChildProcessCleanup(childProcess);
     const { output } = await childProcess;
-    loader.stop(
-      `${
-        args.archive ? 'Archived' : 'Built'
-      } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
-    );
+    if (!logger.isVerbose()) {
+      loader.stop(
+        `${
+          args.archive ? 'Archived' : 'Built'
+        } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
+      );
+    } else {
+      // @todo abstract loader to fall back to logger in non-tty mode.
+      logger.info(
+        `${
+          args.archive ? 'Archived' : 'Built'
+        } the app with xcodebuild for ${scheme} scheme in ${mode} mode.`
+      );
+    }
     return output;
   } catch (error) {
-    logger.log((error as SubprocessError).stdout);
-    logger.error((error as SubprocessError).stderr);
-    loader.stop(
-      'Running xcodebuild failed. Check the error message above for details.',
-      1
-    );
+    if (!logger.isVerbose()) {
+      logger.error((error as SubprocessError).stderr);
+      loader.stop(
+        'Running xcodebuild failed. Check the error message above for details.',
+        1
+      );
+    }
 
     if (!xcodeProject.isWorkspace) {
       throw new RnefError(
