@@ -37,9 +37,10 @@ export async function getBuildSettings(
 
   const settings = JSON.parse(buildSettings);
 
-  const targets = settings.map(
-    ({ target: settingsTarget }: { target: string }) => settingsTarget
-  );
+  const targets = settings
+    // skip React target if present; may happen in some older projects; @todo revisit
+    .filter(({ target }: { target: string }) => target !== 'React')
+    .map(({ target: settingsTarget }: { target: string }) => settingsTarget);
 
   let selectedTarget = targets[0];
 
@@ -54,6 +55,7 @@ export async function getBuildSettings(
       selectedTarget = target;
     }
   }
+  logger.debug(`Selected target: ${selectedTarget}`);
 
   // Find app in all building settings - look for WRAPPER_EXTENSION: 'app',
   const targetIndex = targets.indexOf(selectedTarget);
