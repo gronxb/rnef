@@ -1,3 +1,4 @@
+import { parseArgs } from '@rnef/tools';
 import type { BuilderCommand } from '../../types/index.js';
 import { getPlatformInfo } from '../../utils/getPlatformInfo.js';
 
@@ -45,7 +46,7 @@ export const getBuildOptions = ({ platformName }: BuilderCommand) => {
     {
       name: '--extra-params <string>',
       description: 'Custom params that will be passed to xcodebuild command.',
-      parse: (val: string) => val.split(' '),
+      parse: parseArgs,
     },
     {
       name: '--export-extra-params <string>',
@@ -53,7 +54,7 @@ export const getBuildOptions = ({ platformName }: BuilderCommand) => {
         'Custom params that will be passed to xcodebuild export archive command.\n' +
         'Example:\n' +
         '  --export-extra-params "-allowProvisioningUpdates"',
-      parse: (val: string) => val.split(' '),
+      parse: parseArgs,
     },
     {
       name: '--device <string>',
