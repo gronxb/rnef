@@ -31,11 +31,7 @@ export default async function installApp({
   let targetBuildDir;
   let infoPlistPath = 'Info.plist';
 
-  if (udid && appPath) {
-    await spawn('xcrun', ['simctl', 'install', udid, appPath], {
-      stdio: logger.isVerbose() ? 'inherit' : ['ignore', 'pipe', 'inherit'],
-    });
-  } else {
+  if (!appPath) {
     const buildSettings = await getBuildSettings(
       xcodeProject,
       sourceDir,
@@ -49,10 +45,7 @@ export default async function installApp({
       throw new Error('Failed to get build settings for your project');
     }
 
-    if (!appPath) {
-      appPath = getBuildPath(buildSettings, platform);
-    }
-
+    appPath = getBuildPath(buildSettings, platform);
     targetBuildDir = buildSettings.TARGET_BUILD_DIR;
     infoPlistPath = buildSettings.INFOPLIST_PATH;
 
@@ -64,6 +57,10 @@ export default async function installApp({
       throw new Error('Failed to get target build directory.');
     }
   }
+
+  await spawn('xcrun', ['simctl', 'install', udid, appPath], {
+    stdio: logger.isVerbose() ? 'inherit' : ['ignore', 'pipe', 'inherit'],
+  });
 
   logger.debug(`Installing "${path.basename(appPath)}"`);
 
