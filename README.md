@@ -21,84 +21,84 @@
 
 ## Installation
 
+For new projects you can run:
+
 ```
 npx create-rnef-app enterprise
 ```
 
-## Run tasks
+## Adding to existing projects
 
-To run tasks with Nx use:
+1. Copy `.github/` files from [`@rnef/template-default`](https://github.com/callstack/rnef/tree/main/templates/rnef-template-default/), [`@rnef/plugin-platform-android`](https://github.com/callstack/rnef/tree/main/packages/plugin-platform-android/template), and [`@rnef/plugin-platform-ios`](https://github.com/callstack/rnef/tree/main/packages/plugin-platform-ios/template). They contain necessary actions with remote builds for iOS and Android and sample workflows for running those actions. In the upcoming future we'll release reusable actions so you will only need to integrate them into your workflows.
 
-```sh
-npx nx <target> <project-name>
-```
+1. Install deps:
 
-For example:
+   ```sh
+   npm install --dev @rnef/cli @rnef/plugin-metro @rnef/plugin-platform-android @rnef/plugin-platform-ios @actions/core @actions/github
+   ```
 
-```sh
-npx nx build myproject
-```
+1. Remove `@react-native-community/cli` and related packages.
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+1. Add `.rnef/` folder with caches to `.gitignore`:
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+   ```
+   .rnef/
+   ```
 
-## Versioning and releasing
+1. Add `rnef.config.mjs` file:
 
-To version and release the library use
+   ```mjs
+   import { pluginPlatformIOS } from '@rnef/plugin-platform-ios';
+   import { pluginPlatformAndroid } from '@rnef/plugin-platform-android';
+   import { pluginMetro } from '@rnef/plugin-metro';
 
-```
-npx nx release
-```
+   export default {
+     plugins: {
+       metro: pluginMetro(),
+     },
+     platforms: {
+       ios: pluginPlatformIOS(),
+       android: pluginPlatformAndroid(),
+     },
+   };
+   ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+1. Update Android files:
 
-[Learn more about Nx release &raquo;](hhttps://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+   In `android/app/build.gradle` uncomment the `cliFile` and update with the new path:
 
-## Add new projects
+   ```diff
+   -// cliFile = file("../../node_modules/react-native/cli.js")
+   +cliFile = file("../../node_modules/@rnef/cli/src/bin.js")
+   ```
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+   In `android/settings.gradle` change:
 
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
+   ```diff
+   -extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+   +extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand(['npx', 'rnef', 'config', '-p', 'android']) }
+   ```
 
-```sh
-npx nx add @nx/react
-```
+1. Update iOS files:
 
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
+   In `ios/Podfile` change:
 
-```sh
-# Genenerate an app
-npx nx g @nx/react:app demo
+   ```diff
+   -config = use_native_modules!
+   +config = use_native_modules!(['npx', 'rnef', 'config', '-p', 'ios'])
+   ```
 
-# Generate a library
-npx nx g @nx/react:lib some-lib
-```
+1. Cleanup native files:
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+   ```sh
+   git clean -fdx ios/ android/
+   ```
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. Run new commands:
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+   ```sh
+   npx rnef run:android
+   npx rnef run:ios
+   ```
 
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/npm-workspaces-tutorial?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. Configure GitHub Actions for remote builds.
