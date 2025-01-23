@@ -12,16 +12,19 @@ export type GitHubRepoDetails = {
   repository: string;
 };
 
-export async function detectGitHubRepoDetails(): Promise<GitHubRepoDetails | null> {
+export async function detectGitHubRepoDetails(
+  gitRemote: string
+): Promise<GitHubRepoDetails | null> {
   try {
     const { output: url } = await spawn('git', [
       'config',
       '--get',
-      'remote.origin.url',
+      `remote.${gitRemote}.url`,
     ]);
 
     const match = url.match(GITHUB_REPO_REGEX);
     if (!match) {
+      logger.warn(`The remote URL ${url} doesn't look like a GitHub repo.`);
       return null;
     }
 
@@ -31,7 +34,8 @@ export async function detectGitHubRepoDetails(): Promise<GitHubRepoDetails | nul
       repository: match[2],
     };
   } catch (error: unknown) {
-    logger.debug('Unable to detect GitHub repository details:', error);
+    logger.warn('Unable to detect GitHub repository details.');
+    logger.debug(error);
     return null;
   }
 }

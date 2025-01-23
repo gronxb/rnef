@@ -1,3 +1,4 @@
+import { getGitRemote } from '../../git.js';
 import logger from '../../logger.js';
 import type {
   LocalArtifact,
@@ -9,10 +10,19 @@ import {
   downloadGitHubArtifact,
   fetchGitHubArtifactsByName,
 } from './artifacts.js';
-import { hasGitHubToken } from './config.js';
+import type { GitHubRepoDetails } from './config.js';
+import { detectGitHubRepoDetails, hasGitHubToken } from './config.js';
 
 export class GitHubBuildCache implements RemoteBuildCache {
   name = 'GitHub';
+  repoDetails: GitHubRepoDetails | null = null;
+
+  async detectRepoDetails() {
+    const gitRemote = await getGitRemote();
+    this.repoDetails = gitRemote
+      ? await detectGitHubRepoDetails(gitRemote)
+      : null;
+  }
 
   async query(artifactName: string): Promise<RemoteArtifact | null> {
     if (!hasGitHubToken()) {
@@ -22,7 +32,10 @@ export class GitHubBuildCache implements RemoteBuildCache {
       return null;
     }
 
-    const artifacts = await fetchGitHubArtifactsByName(artifactName);
+    const artifacts = await fetchGitHubArtifactsByName(
+      artifactName,
+      this.repoDetails
+    );
     if (artifacts.length === 0) {
       return null;
     }
