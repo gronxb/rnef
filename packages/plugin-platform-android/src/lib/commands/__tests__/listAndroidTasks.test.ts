@@ -2,26 +2,11 @@ import * as tools from '@rnef/tools';
 import spawn from 'nano-spawn';
 import color from 'picocolors';
 import type { Mock, MockedFunction } from 'vitest';
-import { describe, it, vi } from 'vitest';
+import { describe, it } from 'vitest';
 import {
   parseTasksFromGradleFile,
   promptForTaskSelection,
 } from '../listAndroidTasks.js';
-
-vi.spyOn(tools, 'promptSelect');
-vi.spyOn(tools, 'spinner').mockImplementation(() => {
-  return {
-    start: vi.fn(),
-    stop: vi.fn(),
-    message: vi.fn(),
-  };
-});
-
-vi.mock('nano-spawn', () => {
-  return {
-    default: vi.fn(),
-  };
-});
 
 const gradleTaskOutput = `
 > Task :tasks

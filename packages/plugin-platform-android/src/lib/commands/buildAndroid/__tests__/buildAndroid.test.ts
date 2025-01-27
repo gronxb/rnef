@@ -10,31 +10,6 @@ import { buildAndroid, type BuildFlags } from '../buildAndroid.js';
 
 const actualFs = await vi.importMock('node:fs');
 
-const mocks = vi.hoisted(() => {
-  return {
-    startMock: vi.fn(),
-    stopMock: vi.fn(),
-    outroMock: vi.fn(),
-  };
-});
-
-vi.spyOn(tools, 'promptSelect');
-vi.spyOn(tools, 'intro');
-vi.spyOn(tools, 'outro').mockImplementation(() => mocks.outroMock);
-vi.spyOn(tools, 'spinner').mockImplementation(() => ({
-  start: mocks.startMock,
-  stop: mocks.stopMock,
-  message: vi.fn(),
-}));
-vi.spyOn(tools.logger, 'error');
-
-vi.mock('node:fs');
-vi.mock('nano-spawn', () => {
-  return {
-    default: vi.fn(),
-  };
-});
-
 const gradleTaskOutput = `
 > Task :tasks
 
@@ -67,6 +42,14 @@ const androidProject: AndroidProjectConfig = {
   mainActivity: '.MainActivity',
   assets: [],
 };
+
+const spinnerMock = vi.hoisted(() => ({
+  start: vi.fn(),
+  stop: vi.fn(),
+  message: vi.fn(),
+}));
+
+vi.spyOn(tools, 'spinner').mockImplementation(() => spinnerMock);
 
 beforeEach(() => {
   vi.resetModules();
@@ -102,12 +85,11 @@ test('buildAndroid runs gradle build with correct configuration for debug and ou
 
   await buildAndroid(androidProject, args);
 
-  expect(vi.mocked(spawn)).toBeCalledWith(
-    './gradlew',
-    ['app:bundleDebug', '-x', 'lint'],
-    { stdio: 'inherit', cwd: '/android' }
-  );
-  expect(mocks.stopMock).toBeCalledWith(
+  expect(spawn).toBeCalledWith('./gradlew', ['app:bundleDebug', '-x', 'lint'], {
+    stdio: 'inherit',
+    cwd: '/android',
+  });
+  expect(spinnerMock.stop).toBeCalledWith(
     `Build output: ${color.cyan(
       '/android/app/build/outputs/bundle/debug/app-debug.aab'
     )}`
@@ -116,7 +98,6 @@ test('buildAndroid runs gradle build with correct configuration for debug and ou
 
 test('buildAndroid fails gracefully when gradle errors', async () => {
   vi.mocked(spawn).mockRejectedValueOnce({ stderr: 'gradle error' });
-  vi.spyOn(tools.logger, 'error').mockImplementation(() => {});
 
   await expect(
     buildAndroid(androidProject, args)
@@ -124,11 +105,10 @@ test('buildAndroid fails gracefully when gradle errors', async () => {
     `[RnefError: Failed to build the app. See the error above for details from Gradle.]`
   );
 
-  expect(vi.mocked(spawn)).toBeCalledWith(
-    './gradlew',
-    ['app:bundleDebug', '-x', 'lint'],
-    { stdio: 'inherit', cwd: '/android' }
-  );
+  expect(spawn).toBeCalledWith('./gradlew', ['app:bundleDebug', '-x', 'lint'], {
+    stdio: 'inherit',
+    cwd: '/android',
+  });
 });
 
 test('buildAndroid runs selected "bundleRelease" task in interactive mode', async () => {
@@ -153,21 +133,21 @@ test('buildAndroid runs selected "bundleRelease" task in interactive mode', asyn
 
   await buildAndroid(androidProject, { ...args, interactive: true });
 
-  expect(vi.mocked(spawn)).toHaveBeenNthCalledWith(
+  expect(spawn).toHaveBeenNthCalledWith(
     1,
     './gradlew',
     ['tasks', '--group', 'build'],
     { cwd: '/android' }
   );
-  expect(vi.mocked(spawn)).toHaveBeenNthCalledWith(
+  expect(spawn).toHaveBeenNthCalledWith(
     2,
     './gradlew',
     ['app:bundleRelease', '-x', 'lint'],
     { stdio: 'inherit', cwd: '/android' }
   );
-  expect(mocks.startMock).toBeCalledWith(
+  expect(spinnerMock.start).toBeCalledWith(
     'Searching for available Gradle tasks...'
   );
-  expect(mocks.stopMock).toBeCalledWith('Found 2 Gradle tasks.');
+  expect(spinnerMock.stop).toBeCalledWith('Found 2 Gradle tasks.');
   expect(tools.outro).toBeCalledWith('Success 🎉.');
 });

@@ -1,5 +1,4 @@
 import type { AndroidProjectConfig } from '@react-native-community/cli-types';
-import * as tools from '@rnef/tools';
 import spawn from 'nano-spawn';
 import { test, vi } from 'vitest';
 import type { DeviceData } from '../listAndroidDevices.js';
@@ -9,15 +8,6 @@ import { tryLaunchAppOnDevice } from '../tryLaunchAppOnDevice.js';
 vi.mock('nano-spawn', () => {
   return {
     default: vi.fn(() => Promise.resolve({ stdout: '', stderr: '' })),
-  };
-});
-
-vi.spyOn(tools, 'promptSelect');
-vi.spyOn(tools, 'spinner').mockImplementation(() => {
-  return {
-    start: vi.fn(),
-    stop: vi.fn(),
-    message: vi.fn(),
   };
 });
 
