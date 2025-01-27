@@ -17,10 +17,8 @@
     "publish:verdaccio": "npm publish --registry http://localhost:4873 --userconfig ../../.npmrc"
   },
   "dependencies": {
-    "@clack/prompts": "^0.9.0",
     "@react-native-community/cli-config-android": "^16.0.2",
     "@rnef/tools": "^0.1.4",
-    "is-interactive": "^2.0.0",
     "nano-spawn": "^0.2.0",
     "picocolors": "^1.1.1",
     "tslib": "^2.3.0"

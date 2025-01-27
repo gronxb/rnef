@@ -1,8 +1,7 @@
 import type { PathLike } from 'node:fs';
 import fs from 'node:fs';
-import { select } from '@clack/prompts';
 import type { AndroidProjectConfig } from '@react-native-community/cli-types';
-import { logger } from '@rnef/tools';
+import * as tools from '@rnef/tools';
 import spawn from 'nano-spawn';
 import type { Mock } from 'vitest';
 import { test, vi } from 'vitest';
@@ -10,11 +9,17 @@ import { type Flags, runAndroid } from '../runAndroid.js';
 
 const actualFs = await vi.importMock('node:fs');
 
-const mocks = vi.hoisted(() => {
+vi.spyOn(tools, 'intro').mockImplementation(() => {});
+vi.spyOn(tools, 'outro').mockImplementation(() => {});
+vi.spyOn(tools, 'promptSelect');
+vi.spyOn(tools.logger, 'warn').mockImplementation(() => {});
+vi.spyOn(tools.logger, 'error').mockImplementation(() => {});
+vi.spyOn(tools.logger, 'log').mockImplementation(() => {});
+vi.spyOn(tools, 'spinner').mockImplementation(() => {
   return {
-    startMock: vi.fn(),
-    stopMock: vi.fn(),
-    outroMock: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    message: vi.fn(),
   };
 });
 
@@ -23,23 +28,6 @@ vi.mock('node:fs');
 vi.mock('nano-spawn', () => {
   return {
     default: vi.fn(),
-  };
-});
-
-vi.mock('@clack/prompts', () => {
-  return {
-    spinner: vi.fn(() => ({
-      start: mocks.startMock,
-      stop: mocks.stopMock,
-      message: vi.fn(),
-    })),
-    select: vi.fn(),
-    isCancel: vi.fn(() => false),
-    intro: vi.fn(),
-    outro: mocks.outroMock,
-    log: {
-      warn: vi.fn(),
-    },
   };
 });
 
@@ -327,7 +315,7 @@ test.each([['release'], ['debug'], ['staging']])(
         adbDevicesOutput: adbDevicesTwoDevicesOutput,
       });
     });
-    vi.mocked(select).mockImplementation((opts) => {
+    vi.mocked(tools.promptSelect).mockImplementation((opts) => {
       if (opts.message === 'Select the device / emulator you want to use') {
         return Promise.resolve({
           deviceId: 'emulator-5554',
@@ -338,10 +326,10 @@ test.each([['release'], ['debug'], ['staging']])(
       }
       return Promise.resolve(undefined);
     });
-    const logErrorSpy = vi.spyOn(logger, 'error');
+    const logErrorSpy = vi.spyOn(tools.logger, 'error');
     await runAndroid({ ...androidProject }, { ...args, mode }, '/');
 
-    expect(mocks.outroMock).toBeCalledWith('Success 🎉.');
+    expect(tools.outro).toBeCalledWith('Success 🎉.');
     expect(logErrorSpy).not.toBeCalled();
 
     // Runs installDebug with only active architecture arm64-v8a
@@ -358,7 +346,7 @@ test.each([['release'], ['debug'], ['staging']])(
         '-PreactNativeDevServerPort=8081',
         '-PreactNativeArchitectures=arm64-v8a,armeabi-v7a',
       ],
-      { stdio: 'pipe', cwd: '/android' }
+      { stdio: 'inherit', cwd: '/android' }
     );
 
     // launches com.test app with MainActivity on emulator-5552
@@ -377,7 +365,7 @@ test('runAndroid runs gradle build with custom --appId, --appIdSuffix and --main
   (spawn as Mock).mockImplementation((file, args) =>
     spawnMockImplementation(file, args)
   );
-  const logErrorSpy = vi.spyOn(logger, 'error');
+  const logErrorSpy = vi.spyOn(tools.logger, 'error');
   await runAndroid(
     { ...androidProject },
     {
@@ -389,7 +377,7 @@ test('runAndroid runs gradle build with custom --appId, --appIdSuffix and --main
     '/'
   );
 
-  expect(mocks.outroMock).toBeCalledWith('Success 🎉.');
+  expect(tools.outro).toBeCalledWith('Success 🎉.');
   expect(logErrorSpy).not.toBeCalled();
 
   // launches com.custom.suffix app with OtherActivity on emulator-5552
@@ -407,7 +395,7 @@ test('runAndroid fails to launch an app on not-connected device when specified w
   (spawn as Mock).mockImplementation((file, args) =>
     spawnMockImplementation(file, args)
   );
-  const logWarnSpy = vi.spyOn(logger, 'warn');
+  const logWarnSpy = vi.spyOn(tools.logger, 'warn');
 
   await runAndroid(
     { ...androidProject },
@@ -464,7 +452,7 @@ test.each([
       return (actualFs as typeof fs).existsSync(file);
     });
 
-    vi.mocked(select).mockImplementation((opts) => {
+    vi.mocked(tools.promptSelect).mockImplementation((opts) => {
       if (opts.message === 'Select the device / emulator you want to use') {
         return Promise.resolve({
           deviceId: 'emulator-5554',
@@ -505,7 +493,7 @@ test.each([
         '-PreactNativeDevServerPort=8081',
         '-PreactNativeArchitectures=arm64-v8a,armeabi-v7a',
       ],
-      { stdio: 'pipe', cwd: '/android' }
+      { stdio: 'inherit', cwd: '/android' }
     );
 
     // launches com.test app with MainActivity on emulator-5554
@@ -554,7 +542,7 @@ test('runAndroid launches an app on all connected devices', async () => {
       '-PreactNativeDevServerPort=8081',
       '-PreactNativeArchitectures=arm64-v8a,armeabi-v7a',
     ],
-    { stdio: 'pipe', cwd: '/android' }
+    { stdio: 'inherit', cwd: '/android' }
   );
 
   // launches com.test app with MainActivity on emulator-5552

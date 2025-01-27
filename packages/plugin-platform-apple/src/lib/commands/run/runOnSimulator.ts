@@ -1,4 +1,4 @@
-import { spinner } from '@clack/prompts';
+import { spinner } from '@rnef/tools';
 import spawn from 'nano-spawn';
 import type {
   ApplePlatform,

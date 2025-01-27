@@ -1,6 +1,5 @@
 import { performance } from 'node:perf_hooks';
-import { intro, outro, spinner } from '@clack/prompts';
-import { logger, nativeFingerprint } from '@rnef/tools';
+import { intro, logger, nativeFingerprint, outro, spinner } from '@rnef/tools';
 
 type NativeFingerprintCommandOptions = {
   platform: 'ios' | 'android';
@@ -23,10 +22,9 @@ export async function nativeFingerprintCommand(
   const duration = performance.now() - start;
 
   loader.stop(`Fingerprint calculated: ${fingerprint.hash}`);
-  if (logger.isVerbose()) {
-    logger.debug('Sources:', JSON.stringify(fingerprint.sources, null, 2));
-    logger.debug(`Duration: ${(duration / 1000).toFixed(1)}s`);
-  }
+
+  logger.debug('Sources:', JSON.stringify(fingerprint.sources, null, 2));
+  logger.debug(`Duration: ${(duration / 1000).toFixed(1)}s`);
 
   outro('Success 🎉.');
 }

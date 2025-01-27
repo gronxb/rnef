@@ -105,9 +105,6 @@ importers:
 
   packages/cli:
     dependencies:
-      '@clack/prompts':
-        specifier: ^0.9.0
-        version: 0.9.0
       '@react-native-community/cli-config':
         specifier: ^16.0.2
         version: 16.0.2(typescript@5.6.3)
@@ -136,9 +133,6 @@ importers:
 
   packages/create-app:
     dependencies:
-      '@clack/prompts':
-        specifier: ^0.9.0
-        version: 0.9.0
       '@rnef/tools':
         specifier: ^0.1.4
         version: link:../tools
@@ -189,18 +183,12 @@ importers:
 
   packages/plugin-platform-android:
     dependencies:
-      '@clack/prompts':
-        specifier: ^0.9.0
-        version: 0.9.0
       '@react-native-community/cli-config-android':
         specifier: ^16.0.2
         version: 16.0.2
       '@rnef/tools':
         specifier: ^0.1.4
         version: link:../tools
-      is-interactive:
-        specifier: ^2.0.0
-        version: 2.0.0
       nano-spawn:
         specifier: ^0.2.0
         version: 0.2.0
@@ -220,9 +208,6 @@ importers:
 
   packages/plugin-platform-apple:
     dependencies:
-      '@clack/prompts':
-        specifier: ^0.9.0
-        version: 0.9.0
       '@react-native-community/cli-config-apple':
         specifier: ^16.0.2
         version: 16.0.2
@@ -235,9 +220,6 @@ importers:
       fast-xml-parser:
         specifier: ^4.5.0
         version: 4.5.0
-      is-interactive:
-        specifier: ^2.0.0
-        version: 2.0.0
       nano-spawn:
         specifier: ^0.2.0
         version: 0.2.0
@@ -3788,10 +3770,6 @@ packages:
   is-interactive@1.0.0:
     resolution: {integrity: sha512-2HvIEKRoqS62guEC+qBjpvRubdX910WCMuJTZ+I9yvqKU2/12eSL549HMwtabb4oupdj2sMP50k+XJfB/8JE6w==}
     engines: {node: '>=8'}
-
-  is-interactive@2.0.0:
-    resolution: {integrity: sha512-qP1vozQRI+BMOPcjFzrjXuQvdak2pHNUMZoeG2eRbiSqyvbEf/wQtEOTOX1guk6E3t36RkaqiSt8A/6YElNxLQ==}
-    engines: {node: '>=12'}
 
   is-number@7.0.0:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
@@ -10158,8 +10136,6 @@ snapshots:
   is-gzip@1.0.0: {}
 
   is-interactive@1.0.0: {}
-
-  is-interactive@2.0.0: {}
 
   is-number@7.0.0: {}
 

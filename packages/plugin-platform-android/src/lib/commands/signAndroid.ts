@@ -1,7 +1,13 @@
 import path from 'node:path';
-import { group, intro, outro, text } from '@clack/prompts';
 import type { AndroidProjectConfig } from '@react-native-community/cli-types';
-import { checkCancelPrompt, logger, RnefError } from '@rnef/tools';
+import {
+  intro,
+  logger,
+  outro,
+  promptGroup,
+  promptText,
+  RnefError,
+} from '@rnef/tools';
 import spawn, { type SubprocessError } from 'nano-spawn';
 import color from 'picocolors';
 
@@ -79,21 +85,22 @@ async function runKeytool(
 }
 
 async function prompts({ name, alias }: SignFlags) {
-  return checkCancelPrompt<{ name: string; alias: string }>(
-    group({
-      name: () =>
-        name
-          ? Promise.resolve(name)
-          : text({ message: 'Provide keystore name', initialValue: 'release' }),
-      alias: () =>
-        alias
-          ? Promise.resolve(alias)
-          : text({
-              message: 'Provide keystore alias',
-              initialValue: 'rnef-alias',
-            }),
-    })
-  );
+  return promptGroup({
+    name: () =>
+      name
+        ? Promise.resolve(name)
+        : promptText({
+            message: 'Provide keystore name',
+            initialValue: 'release',
+          }),
+    alias: () =>
+      alias
+        ? Promise.resolve(alias)
+        : promptText({
+            message: 'Provide keystore alias',
+            initialValue: 'rnef-alias',
+          }),
+  });
 }
 
 export const signOptions = [
