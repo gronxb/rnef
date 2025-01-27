@@ -1,13 +1,13 @@
 import { vi } from 'vitest';
 
 vi.mock('node:fs');
-vi.mock('nano-spawn');
 
 vi.mock('@rnef/tools', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual = await importOriginal<typeof import('@rnef/tools')>();
   return {
     ...actual,
+    // Logger
     logger: {
       ...actual.logger,
       success: vi.fn(),
@@ -17,6 +17,7 @@ vi.mock('@rnef/tools', async (importOriginal) => {
       debug: vi.fn(),
       log: vi.fn(),
     },
+    // Prompts
     intro: vi.fn(),
     outro: vi.fn(),
     note: vi.fn(),
@@ -29,5 +30,7 @@ vi.mock('@rnef/tools', async (importOriginal) => {
       stop: vi.fn(),
       message: vi.fn(),
     })),
+    // Spawn
+    spawn: vi.fn(),
   };
 });
