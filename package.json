@@ -42,6 +42,7 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "fast-glob": "^3.3.2",
+    "jsonc-eslint-parser": "^2.4.0",
     "nano-spawn": "^0.2.0",
     "nx": "20.3.0",
     "prettier": "^2.6.2",
@@ -55,5 +56,5 @@
   "nx": {
     "includedScripts": []
   },
-  "packageManager": "pnpm@9.11.0"
+  "packageManager": "pnpm@10.2.1+sha256.f988f0d93b87e1da2d8cdf6ac7f45a01c6f843ae3606b4ca0f2ffd713b85f975"
 }
