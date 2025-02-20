@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type {
-  SupportedRemoteCacheProviders} from '@rnef/tools';
+import { getProjectConfig } from '@react-native-community/cli-config-apple';
+import type { SupportedRemoteCacheProviders } from '@rnef/tools';
 import {
   color,
   intro,
@@ -10,7 +10,7 @@ import {
   outro,
   promptSelect,
   RnefError,
-  spinner
+  spinner,
 } from '@rnef/tools';
 import type {
   ApplePlatform,
@@ -22,6 +22,7 @@ import { getInfo } from '../../utils/getInfo.js';
 import { getPlatformInfo } from '../../utils/getPlatformInfo.js';
 import { getScheme } from '../../utils/getScheme.js';
 import { listDevicesAndSimulators } from '../../utils/listDevices.js';
+import { installPodsIfNeeded } from '../../utils/pods.js';
 import { fetchCachedBuild } from './fetchCachedBuild.js';
 import { matchingDevice } from './matchingDevice.js';
 import { cacheRecentDevice, sortByRecentDevices } from './recentDevices.js';
@@ -44,7 +45,7 @@ export const createRun = async (
     const cachedBuild = await fetchCachedBuild({
       configuration: args.configuration ?? 'Debug',
       distribution: args.device ? 'device' : 'simulator', // TODO: replace with better logic
-      remoteCacheProvider
+      remoteCacheProvider,
     });
     if (cachedBuild) {
       // @todo replace with a more generic way to pass binary path
@@ -52,8 +53,7 @@ export const createRun = async (
     }
   }
 
-  const { readableName: platformReadableName } = getPlatformInfo(platformName);
-  const { xcodeProject, sourceDir } = projectConfig;
+  let { xcodeProject, sourceDir } = projectConfig;
 
   if (!xcodeProject) {
     throw new RnefError(
@@ -62,6 +62,32 @@ export const createRun = async (
   }
 
   validateArgs(args, projectRoot);
+
+  if (args.installPods) {
+    await installPodsIfNeeded(
+      projectRoot,
+      platformName,
+      sourceDir,
+      args.newArch
+    );
+    // When the project is not a workspace, we need to get the project config again,
+    // because running pods install might have generated .xcworkspace project.
+    // This should be only case in new project.
+    if (xcodeProject?.isWorkspace === false) {
+      const newProjectConfig = getProjectConfig({ platformName })(
+        projectRoot,
+        {}
+      );
+      if (newProjectConfig) {
+        xcodeProject = newProjectConfig.xcodeProject;
+        sourceDir = newProjectConfig.sourceDir;
+      }
+    }
+  }
+
+  if (!xcodeProject) {
+    throw new RnefError('Failed to get Xcode project information');
+  }
 
   const info = await getInfo(xcodeProject, sourceDir);
 
@@ -101,8 +127,9 @@ export const createRun = async (
   loader.start('Looking for available devices and simulators');
   const devices = await listDevicesAndSimulators(platformName);
   if (devices.length === 0) {
+    const { readableName } = getPlatformInfo(platformName);
     throw new RnefError(
-      `${platformReadableName} devices or simulators not detected. Install simulators via Xcode or connect a physical ${platformReadableName} device`
+      `No devices or simulators detected. Install simulators via Xcode or connect a physical ${readableName} device.`
     );
   }
   loader.stop('Found available devices and simulators.');

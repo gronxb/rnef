@@ -25,7 +25,7 @@ export const platformIOS =
         const iosConfig = projectConfig(projectRoot, {});
 
         if (iosConfig) {
-          await createBuild('ios', iosConfig, args as BuildFlags);
+          await createBuild('ios', iosConfig, args as BuildFlags, projectRoot);
         } else {
           throw new RnefError('iOS project not found.');
         }

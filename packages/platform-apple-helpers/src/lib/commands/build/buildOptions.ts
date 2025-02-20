@@ -15,6 +15,8 @@ export type BuildFlags = {
   buildFolder?: string;
   destinations?: string[];
   archive?: boolean;
+  installPods: boolean;
+  newArch: boolean;
 };
 
 export const getBuildOptions = ({ platformName }: BuilderCommand) => {
@@ -80,6 +82,15 @@ export const getBuildOptions = ({ platformName }: BuilderCommand) => {
       name: '--archive',
       description:
         'Create an Xcode archive (IPA) of the build, required for uploading to App Store Connect or distributing to TestFlight',
+    },
+    {
+      name: '--no-install-pods',
+      description: 'Skip automatic CocoaPods installation',
+    },
+    {
+      name: '--no-new-arch',
+      description:
+        'Run React Native in legacy async architecture.',
     },
   ];
 };
