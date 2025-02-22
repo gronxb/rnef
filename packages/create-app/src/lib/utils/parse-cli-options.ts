@@ -6,6 +6,7 @@ export type CliOptions = {
   template?: string;
   platforms?: string[];
   plugins?: string[];
+  bundler?: string;
   help?: boolean;
   version?: boolean;
   dir?: string;
@@ -21,6 +22,7 @@ type MinimistOptions = {
   template?: string;
   platform?: string | string[];
   plugin?: string | string[];
+  bundler?: string;
   'remote-cache-provider'?: string | boolean;
 };
 
@@ -36,6 +38,7 @@ export function parseCliOptions(argv: string[]): CliOptions {
     template: ensureOptionalString(options.template),
     platforms: ensureOpitonalArray(options.platform),
     plugins: ensureOpitonalArray(options.plugin),
+    bundler: options.bundler,
     help: options.help,
     version: options.version,
     dir: ensureOptionalString(options.dir),
