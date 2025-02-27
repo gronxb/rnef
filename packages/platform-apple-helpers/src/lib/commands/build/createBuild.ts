@@ -63,13 +63,11 @@ export const createBuild = async (
   const scheme = await getScheme(
     info.schemes,
     args.scheme,
-    args.interactive,
     xcodeProject.name
   );
   const configuration = await getConfiguration(
     info.configurations,
     args.configuration,
-    args.interactive
   );
 
   try {
@@ -111,12 +109,6 @@ export const createBuild = async (
 };
 
 function validateArgs(args: BuildFlags) {
-  if (args.interactive && !isInteractive()) {
-    logger.warn(
-      'Interactive mode is not supported in non-interactive environments.'
-    );
-    args.interactive = false;
-  }
   if (args.destination && args.destinations) {
     logger.error(
       `Both "--destination" and "--destinations" flags are set. Please pick one.`
