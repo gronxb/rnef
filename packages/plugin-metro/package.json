@@ -20,12 +20,12 @@
     "@react-native-community/cli-server-api": "^16.0.2",
     "tslib": "^2.3.0"
   },
-  "peerDependencies": {
-    "@react-native/community-cli-plugin": "*"
-  },
   "devDependencies": {
     "@react-native/community-cli-plugin": "0.78.0",
     "@rnef/config": "^0.3.4"
+  },
+  "peerDependencies": {
+    "@react-native/community-cli-plugin": "*"
   },
   "publishConfig": {
     "access": "restricted"
