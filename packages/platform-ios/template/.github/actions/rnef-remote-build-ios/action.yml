@@ -101,7 +101,7 @@ runs:
         name: ${{ env.ARTIFACT_NAME }}
 
     - name: Post Cached Build (if found)
-      if: ${{ steps.cached-url.outputs.artifact-url && github.event_name == 'pull_request' }}
+      if: ${{ steps.cached-url.outputs.artifact-url && github.event_name == 'pull_request' && inputs.comment-bot == 'true' }}
       uses: ./.github/actions/rnef-post-build
       with:
         title: iOS ${{ inputs.configuration }} ${{ inputs.destination == 'simulator' && 'APP for simulators' || 'IPA for physical devices' }}
