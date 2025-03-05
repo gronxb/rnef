@@ -1,3 +1,5 @@
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 import {
   bundleCommand,
   startCommand,
@@ -121,6 +123,10 @@ export const pluginMetro =
         const reactNativeVersion = api.getReactNativeVersion();
         const reactNativePath = api.getReactNativePath();
         const platforms = api.getPlatforms();
+
+        // create the bundle output directory if it doesn't exist
+        const bundleOutputDir = path.dirname(args.bundleOutput);
+        mkdirSync(bundleOutputDir, { recursive: true });
 
         await bundleCommand.func(
           undefined,
