@@ -71,7 +71,7 @@ jobs:
             NightlyDeploy \
             --template=default \
             --platform=ios --platform=android \
-            --plugin=metro
+            --bundler=metro
 
           cd NightlyDeploy
           NPM_CONFIG_REGISTRY=http://localhost:4873 \
