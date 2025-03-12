@@ -7,7 +7,6 @@ import {
   findDirectoriesWithPattern,
   findFilesWithPattern,
   formatArtifactName,
-  getProjectRoot,
   type LocalBuild,
   logger,
   nativeFingerprint,
@@ -22,12 +21,19 @@ type FetchCachedBuildOptions = {
   distribution: Distribution;
   configuration: string;
   remoteCacheProvider: SupportedRemoteCacheProviders | undefined | null;
+  root: string;
+  fingerprintOptions: {
+    extraSources: string[];
+    ignorePaths: string[];
+  };
 };
 
 export async function fetchCachedBuild({
   distribution,
   configuration,
   remoteCacheProvider,
+  root,
+  fingerprintOptions,
 }: FetchCachedBuildOptions): Promise<LocalBuild | null> {
   if (remoteCacheProvider === null) {
     return null;
@@ -47,10 +53,11 @@ Proceeding with local build.`);
   const loader = spinner();
   loader.start('Looking for a local cached build');
 
-  const root = getProjectRoot();
   const artifactName = await calculateArtifactName({
     distribution,
     configuration,
+    root,
+    fingerprintOptions,
   });
 
   const localBuild = queryLocalBuildCache(artifactName, {
@@ -103,9 +110,14 @@ Proceeding with local build.`);
 async function calculateArtifactName({
   distribution,
   configuration,
+  root,
+  fingerprintOptions,
 }: Omit<FetchCachedBuildOptions, 'remoteCacheProvider'>) {
-  const root = getProjectRoot();
-  const fingerprint = await nativeFingerprint(root, { platform: 'ios' });
+  const fingerprint = await nativeFingerprint(root, {
+    platform: 'ios',
+    ...fingerprintOptions,
+  });
+
   return formatArtifactName({
     platform: 'ios',
     distribution,

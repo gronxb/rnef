@@ -5,7 +5,6 @@ import {
   createRemoteBuildCache,
   findFilesWithPattern,
   formatArtifactName,
-  getProjectRoot,
   logger,
   nativeFingerprint,
   queryLocalBuildCache,
@@ -15,11 +14,18 @@ import {
 type FetchCachedBuildOptions = {
   variant: string;
   remoteCacheProvider: SupportedRemoteCacheProviders | undefined;
+  root: string;
+  fingerprintOptions: {
+    extraSources: string[];
+    ignorePaths: string[];
+  };
 };
 
 export async function fetchCachedBuild({
   variant,
   remoteCacheProvider,
+  root,
+  fingerprintOptions,
 }: FetchCachedBuildOptions): Promise<LocalBuild | null> {
   if (remoteCacheProvider === null) {
     return null;
@@ -39,8 +45,11 @@ Proceeding with local build.`);
   const loader = spinner();
   loader.start('Looking for a local cached build');
 
-  const root = getProjectRoot();
-  const artifactName = await calculateArtifactName(variant);
+  const artifactName = await calculateArtifactName(
+    variant,
+    root,
+    fingerprintOptions
+  );
 
   const localBuild = queryLocalBuildCache(artifactName, { findBinary });
   if (localBuild != null) {
@@ -86,9 +95,16 @@ Proceeding with local build.`);
   };
 }
 
-async function calculateArtifactName(variant: string) {
-  const root = getProjectRoot();
-  const fingerprint = await nativeFingerprint(root, { platform: 'android' });
+async function calculateArtifactName(
+  variant: string,
+  root: string,
+  fingerprintOptions: { extraSources: string[]; ignorePaths: string[] }
+) {
+  const fingerprint = await nativeFingerprint(root, {
+    platform: 'android',
+    ...fingerprintOptions,
+  });
+
   return formatArtifactName({
     platform: 'android',
     build: variant,

@@ -37,7 +37,8 @@ export const createRun = async (
   projectConfig: ProjectConfig,
   args: RunFlags,
   projectRoot: string,
-  remoteCacheProvider: SupportedRemoteCacheProviders | undefined
+  remoteCacheProvider: SupportedRemoteCacheProviders | undefined,
+  fingerprintOptions: { extraSources: string[]; ignorePaths: string[] }
 ) => {
   intro('Running on iOS');
 
@@ -46,6 +47,8 @@ export const createRun = async (
       configuration: args.configuration ?? 'Debug',
       distribution: args.device ? 'device' : 'simulator', // TODO: replace with better logic
       remoteCacheProvider,
+      root: projectRoot,
+      fingerprintOptions,
     });
     if (cachedBuild) {
       // @todo replace with a more generic way to pass binary path

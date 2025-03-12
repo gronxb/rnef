@@ -18,6 +18,10 @@ export type PluginApi = {
   getReactNativePath: () => string;
   getPlatforms: () => { [platform: string]: object };
   getRemoteCacheProvider: () => SupportedRemoteCacheProviders | undefined;
+  getFingerprintOptions: () => {
+    extraSources: string[];
+    ignorePaths: string[];
+  };
 };
 
 type SupportedRemoteCacheProviders = 'github-actions';
@@ -59,11 +63,15 @@ type ConfigType = {
   platforms?: Record<string, PluginType>;
   commands?: Array<CommandType>;
   remoteCacheProvider?: SupportedRemoteCacheProviders;
+  fingerprint?: {
+    extraSources?: string[];
+    ignorePaths?: string[];
+  };
 };
 
 type ConfigOutput = {
   commands?: Array<CommandType>;
-};
+} & PluginApi;
 
 const extensions = ['.js', '.ts', '.mjs'];
 
@@ -139,6 +147,10 @@ export async function getConfig(
     getReactNativePath: () => config.reactNativePath as string,
     getPlatforms: () => config.platforms as { [platform: string]: object },
     getRemoteCacheProvider: () => config.remoteCacheProvider,
+    getFingerprintOptions: () => config.fingerprint as {
+      extraSources: string[];
+      ignorePaths: string[];
+    },
   };
 
   if (config.plugins) {
@@ -161,6 +173,7 @@ export async function getConfig(
 
   const outputConfig: ConfigOutput = {
     commands: config.commands ?? [],
+    ...api,
   };
 
   return outputConfig;

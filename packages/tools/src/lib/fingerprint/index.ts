@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import type { FingerprintSource } from '@expo/fingerprint';
 import { createFingerprintAsync } from '@expo/fingerprint';
-import { RnefError } from './error.js';
+import { RnefError } from '../error.js';
+import { processExtraSources } from './processExtraSources.js';
 
 const HASH_ALGORITHM = 'sha1';
 const EXCLUDED_SOURCES = [
@@ -11,6 +12,8 @@ const EXCLUDED_SOURCES = [
 
 export type FingerprintOptions = {
   platform: 'ios' | 'android';
+  extraSources: string[];
+  ignorePaths: string[];
 };
 
 export type FingerprintResult = {
@@ -38,8 +41,14 @@ export async function nativeFingerprint(
       'node_modules',
       'android/local.properties',
       'android/.idea',
-      'android/.gradle'
+      'android/.gradle',
     ],
+    extraSources: processExtraSources(
+      options.extraSources,
+      path,
+      options.ignorePaths
+    ),
+    ignorePaths: options.ignorePaths,
   });
 
   // Filter out un-relevant sources as these caused hash mismatch between local and remote builds
