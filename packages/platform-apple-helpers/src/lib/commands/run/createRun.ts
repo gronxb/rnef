@@ -17,9 +17,13 @@ import type {
   Device,
   ProjectConfig,
 } from '../../types/index.js';
-import { getConfiguration } from '../../utils/getConfiguration.js';
+import { buildApp } from '../../utils/buildApp.js';
 import { getInfo } from '../../utils/getInfo.js';
-import { getPlatformInfo } from '../../utils/getPlatformInfo.js';
+import {
+  getDevicePlatformSDK,
+  getPlatformInfo,
+  getSimulatorPlatformSDK,
+} from '../../utils/getPlatformInfo.js';
 import { getScheme } from '../../utils/getScheme.js';
 import { listDevicesAndSimulators } from '../../utils/listDevices.js';
 import { installPodsIfNeeded } from '../../utils/pods.js';
@@ -92,30 +96,36 @@ export const createRun = async (
     throw new RnefError('Failed to get Xcode project information');
   }
 
-  const info = await getInfo(xcodeProject, sourceDir);
-
-  if (!info) {
-    throw new RnefError('Failed to get Xcode project information');
-  }
-  const scheme = await getScheme(info.schemes, args.scheme, xcodeProject.name);
-  const configuration = await getConfiguration(
-    info.configurations,
-    args.configuration
-  );
-
   if (platformName === 'macos') {
-    await runOnMac(xcodeProject, sourceDir, configuration, scheme, args);
+    const { appPath } = await buildApp({
+      args,
+      xcodeProject,
+      sourceDir,
+      platformName,
+      platformSDK: getSimulatorPlatformSDK(platformName),
+    });
+    await runOnMac(appPath);
     outro('Success 🎉.');
     return;
   } else if (args.catalyst) {
-    await runOnMacCatalyst(
-      platformName,
-      configuration,
-      scheme,
+    const info = await getInfo(xcodeProject, sourceDir);
+    if (!info) {
+      throw new RnefError('Failed to get Xcode project information');
+    }
+    const scheme = await getScheme(
+      info.schemes,
+      args.scheme,
+      xcodeProject.name
+    );
+    const { appPath } = await buildApp({
+      args,
       xcodeProject,
       sourceDir,
-      args
-    );
+      platformName,
+      platformSDK: getSimulatorPlatformSDK(platformName),
+      selectedScheme: scheme,
+    });
+    await runOnMacCatalyst(appPath, scheme);
     outro('Success 🎉.');
     return;
   }
@@ -135,25 +145,25 @@ export const createRun = async (
   if (device) {
     cacheRecentDevice(device, platformName);
     if (device.type === 'simulator') {
-      await runOnSimulator(
-        device,
+      const { appPath, infoPlistPath } = await buildApp({
+        args,
         xcodeProject,
         sourceDir,
         platformName,
-        configuration,
-        scheme,
-        args
-      );
+        platformSDK: getSimulatorPlatformSDK(platformName),
+        udid: device.udid,
+      });
+      await runOnSimulator(device, appPath, infoPlistPath);
     } else if (device.type === 'device') {
-      await runOnDevice(
-        device,
-        platformName,
-        configuration,
-        scheme,
+      const { appPath } = await buildApp({
+        args,
         xcodeProject,
         sourceDir,
-        args
-      );
+        platformName,
+        platformSDK: getDevicePlatformSDK(platformName),
+        udid: device.udid,
+      });
+      await runOnDevice(device, appPath, sourceDir);
     }
     outro('Success 🎉.');
     return;
@@ -184,20 +194,21 @@ export const createRun = async (
       }
     }
     for (const simulator of bootedSimulators) {
-      await runOnSimulator(
-        simulator,
+      const { appPath, infoPlistPath } = await buildApp({
+        args,
         xcodeProject,
         sourceDir,
         platformName,
-        configuration,
-        scheme,
-        args
-      );
+        platformSDK: getSimulatorPlatformSDK(platformName),
+        udid: simulator.udid,
+      });
+      await runOnSimulator(simulator, appPath, infoPlistPath);
     }
   }
 
   outro('Success 🎉.');
 };
+
 
 async function selectDevice(devices: Device[], args: RunFlags) {
   let device;
