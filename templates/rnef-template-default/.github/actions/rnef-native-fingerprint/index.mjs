@@ -1,3 +1,4 @@
+import path from 'node:path';
 import core from '@actions/core';
 import {getConfig} from '@rnef/config';
 import {nativeFingerprint} from '@rnef/tools';
@@ -6,14 +7,17 @@ const ALLOWED_PLATFORMS = ['android', 'ios'];
 
 async function run() {
   const platform = core.getInput('platform');
+  const workingDirectory = core.getInput('working-directory');
   if (!ALLOWED_PLATFORMS.includes(platform)) {
     throw new Error(`Invalid platform: ${platform}`);
   }
-
-  const config = await getConfig('.');
+  const dir = path.isAbsolute(workingDirectory)
+    ? workingDirectory
+    : path.join(process.cwd(), workingDirectory);
+  const config = await getConfig(dir);
   const fingerprintOptions = config.getFingerprintOptions();
 
-  const fingerprint = await nativeFingerprint('.', {
+  const fingerprint = await nativeFingerprint(dir, {
     platform,
     ...fingerprintOptions,
   });
