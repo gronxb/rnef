@@ -5,7 +5,9 @@ echo "Building all packages..."
 pnpm nx reset
 pnpm build
 
-read -p "Enter NPM OTP: " OTP
+if [ -z "$NPM_TOKEN" ]; then
+  read -p "Enter NPM OTP: " OTP
+fi
 
 echo "NPM: Publishing all packages"
 # If NPM_TOKEN is set (CI environment), use it
