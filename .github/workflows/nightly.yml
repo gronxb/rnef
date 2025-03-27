@@ -121,4 +121,4 @@ jobs:
         run: |
           cd ../NightlyDeploy
           pnpm rnef build:ios --verbose \
-            --destination=device
+            --destination=simulator
