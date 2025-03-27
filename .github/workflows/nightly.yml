@@ -109,7 +109,8 @@ jobs:
             NightlyDeploy \
             --template=default \
             --platform=ios --platform=android \
-            --plugin=metro
+            --plugin=metro \
+            --remote-cache-provider=github-actions
 
           cd NightlyDeploy
           NPM_CONFIG_REGISTRY=http://localhost:4873 \
