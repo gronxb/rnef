@@ -109,7 +109,7 @@ jobs:
             NightlyDeploy \
             --template=default \
             --platform=ios --platform=android \
-            --plugin=metro \
+            --bundler=metro \
             --remote-cache-provider=github-actions
 
           cd NightlyDeploy
