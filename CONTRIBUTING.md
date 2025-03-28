@@ -28,7 +28,7 @@ And then in your test project:
 
 ```sh
 cd /my/test/project/
-pnpm link --global "@rnef/cli" "@rnef/config" "@rnef/tools" "@rnef/platform-android" "@rnef/platform-ios" "@rnef/platform-apple-helpers" "@rnef/create-app" "@rnef/plugin-metro" "@rnef/plugin-repack"
+pnpm link --global "@rnef/cli" "@rnef/config" "@rnef/tools" "@rnef/platform-android" "@rnef/platform-ios" "@rnef/platform-apple-helpers" "@rnef/create-app" "@rnef/plugin-metro" "@rnef/plugin-repack" "@rnef/plugin-brownfield-ios"
 ```
 
 Update entries in package.json to look like this:

@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { outro } from '@clack/prompts';
 import { getProjectConfig } from '@react-native-community/cli-config-apple';
 import {
   color,
@@ -11,7 +10,7 @@ import {
 } from '@rnef/tools';
 import type { BuilderCommand, ProjectConfig } from '../../types/index.js';
 import { buildApp } from '../../utils/buildApp.js';
-import { getBuildPaths } from '../../utils/buildPaths.js';
+import { getBuildPaths } from '../../utils/getBuildPaths.js';
 import {
   getDevicePlatformSDK,
   getSimulatorPlatformSDK,
@@ -100,7 +99,6 @@ export const createBuild = async (
       throw new RnefError('Failed to export archive', { cause: error });
     }
   }
-  outro('Success 🎉.');
 };
 
 async function validateArgs(args: BuildFlags) {

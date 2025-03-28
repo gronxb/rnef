@@ -7,7 +7,7 @@ import {
   getBuildOptions,
   getRunOptions,
 } from '@rnef/platform-apple-helpers';
-import { RnefError } from '@rnef/tools';
+import { outro, RnefError } from '@rnef/tools';
 import { registerSignCommand } from './commands/signIos.js';
 
 const projectConfig = getProjectConfig({ platformName: 'ios' });
@@ -29,6 +29,8 @@ export const platformIOS =
         } else {
           throw new RnefError('iOS project not found.');
         }
+
+        outro('Success 🎉.');
       },
       options: buildOptions,
     });
