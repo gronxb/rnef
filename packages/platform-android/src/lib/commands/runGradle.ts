@@ -6,14 +6,31 @@ import {
   spinner,
   type SubprocessError,
 } from '@rnef/tools';
+import type { AarProject, PackageAarFlags } from './aar/packageAar.js';
+import type { PublishLocalAarFlags } from './aar/publishLocalAar.js';
 import type { BuildFlags } from './buildAndroid/buildAndroid.js';
 import { getAdbPath, getDevices } from './runAndroid/adb.js';
 import type { AndroidProject, Flags } from './runAndroid/runAndroid.js';
+
+type RunGradleAarArgs = {
+  tasks: string[];
+  aarProject: AarProject;
+  args: PackageAarFlags | PublishLocalAarFlags;
+  isPublishTask?: boolean;
+};
 
 export type RunGradleArgs = {
   tasks: string[];
   androidProject: AndroidProject;
   args: BuildFlags | Flags;
+};
+
+const getCleanedErrorMessage = (error: SubprocessError) => {
+  return error.stderr
+    .split('\n')
+    .filter((line) => !gradleLinesToRemove.some((l) => line.includes(l)))
+    .join('\n')
+    .trim();
 };
 
 export async function runGradle({
@@ -69,11 +86,9 @@ export async function runGradle({
     );
   } catch (error) {
     loader.stop('Failed to build the app');
-    const cleanedErrorMessage = (error as SubprocessError).stderr
-      .split('\n')
-      .filter((line) => !gradleLinesToRemove.some((l) => line.includes(l)))
-      .join('\n')
-      .trim();
+    const cleanedErrorMessage = getCleanedErrorMessage(
+      error as SubprocessError
+    );
 
     if (cleanedErrorMessage) {
       logger.error(cleanedErrorMessage);
@@ -83,6 +98,61 @@ export async function runGradle({
     throw new RnefError(
       hints ||
         'Failed to build the app. See the error above for details from Gradle.'
+    );
+  }
+}
+
+export async function runGradleAar({
+  tasks,
+  aarProject,
+  args,
+  isPublishTask = false,
+}: RunGradleAarArgs) {
+  if ('binaryPath' in args) {
+    return;
+  }
+  const loader = spinner({ indicator: 'timer' });
+  const message = isPublishTask
+    ? 'Publishing the AAR'
+    : // @ts-expect-error args.variant is not set for publish task
+      `Building the AAR with Gradle in ${args.variant} build variant`;
+
+  loader.start(message);
+  const gradleArgs = getTaskNames(aarProject.moduleName, tasks);
+
+  gradleArgs.push('-x', 'lint');
+
+  const gradleWrapper = getGradleWrapper();
+
+  try {
+    logger.debug(`Running ${gradleWrapper} ${gradleArgs.join(' ')}.`);
+    await spawn(gradleWrapper, gradleArgs, {
+      cwd: aarProject.sourceDir,
+      stdio: logger.isVerbose() ? 'inherit' : 'pipe',
+    });
+    loader.stop(
+      isPublishTask
+        ? 'Published the AAR to local maven (~/.m2/repository)'
+        : // @ts-expect-error args.variant is not set for publish task
+          `Built the AAR in ${args.variant} build variant.`
+    );
+  } catch (error) {
+    loader.stop(`Failed to ${isPublishTask ? 'publish' : 'build'} the AAR`);
+    const cleanedErrorMessage = getCleanedErrorMessage(
+      error as SubprocessError
+    );
+
+    if (cleanedErrorMessage) {
+      logger.error(cleanedErrorMessage);
+    }
+
+    const hints = getErrorHints((error as SubprocessError).stdout ?? '');
+    throw new RnefError(
+      hints ||
+        `Failed to ${
+          isPublishTask ? 'publish' : 'build'
+        } the AAR. See the error above for details from Gradle.`,
+      { cause: (error as SubprocessError).stderr }
     );
   }
 }
