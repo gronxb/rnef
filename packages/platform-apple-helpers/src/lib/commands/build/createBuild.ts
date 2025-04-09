@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { getProjectConfig } from '@react-native-community/cli-config-apple';
 import {
   color,
   isInteractive,
@@ -8,14 +7,17 @@ import {
   RnefError,
   spinner,
 } from '@rnef/tools';
-import type { BuilderCommand, ProjectConfig } from '../../types/index.js';
+import type {
+  BuilderCommand,
+  ProjectConfig,
+  XcodeProjectInfo,
+} from '../../types/index.js';
 import { buildApp } from '../../utils/buildApp.js';
 import { getBuildPaths } from '../../utils/getBuildPaths.js';
 import {
   getDevicePlatformSDK,
   getSimulatorPlatformSDK,
 } from '../../utils/getPlatformInfo.js';
-import { installPodsIfNeeded } from '../../utils/pods.js';
 import type { BuildFlags } from './buildOptions.js';
 import { exportArchive } from './exportArchive.js';
 
@@ -25,46 +27,13 @@ export const createBuild = async (
   args: BuildFlags,
   projectRoot: string
 ) => {
-  let { xcodeProject, sourceDir } = projectConfig;
-
-  if (!xcodeProject) {
-    throw new RnefError(
-      `Could not find Xcode project files in "${sourceDir}" folder. Please make sure that you have installed Cocoapods and "${sourceDir}" is a valid path`
-    );
-  }
-
   await validateArgs(args);
-
-  if (args.installPods) {
-    await installPodsIfNeeded(
-      projectRoot,
-      platformName,
-      sourceDir,
-      args.newArch
-    );
-    // When the project is not a workspace, we need to get the project config again,
-    // because running pods install might have generated .xcworkspace project.
-    // This should be only case in new project.
-    if (xcodeProject?.isWorkspace === false) {
-      const newProjectConfig = getProjectConfig({ platformName })(
-        projectRoot,
-        {}
-      );
-      if (newProjectConfig) {
-        xcodeProject = newProjectConfig.xcodeProject;
-        sourceDir = newProjectConfig.sourceDir;
-      }
-    }
-  }
-
-  if (!xcodeProject) {
-    throw new RnefError('Failed to get Xcode project information');
-  }
-
+  let xcodeProject: XcodeProjectInfo;
+  let sourceDir: string;
   try {
-    const { appPath } = await buildApp({
-      xcodeProject,
-      sourceDir,
+    const { appPath, ...buildAppResult } = await buildApp({
+      projectRoot,
+      projectConfig,
       platformName,
       platformSDK:
         args.destination === 'simulator'
@@ -75,6 +44,9 @@ export const createBuild = async (
     const loader = spinner();
     loader.start('');
     loader.stop(`Build available at: ${color.cyan(appPath)}`);
+
+    xcodeProject = buildAppResult.xcodeProject;
+    sourceDir = buildAppResult.sourceDir;
   } catch (error) {
     const message = `Failed to create ${args.archive ? 'archive' : 'build'}`;
     throw new RnefError(message, { cause: error });
