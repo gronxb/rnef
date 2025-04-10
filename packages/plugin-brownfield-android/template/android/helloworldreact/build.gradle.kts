@@ -1,18 +1,21 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("com.callstack.react.brownfield")
     `maven-publish`
+    id("com.facebook.react")
+}
+
+react {
+    autolinkLibrariesWithApp()
 }
 
 repositories {
     mavenCentral()
 }
-
-val appProject = project(":app")
-val appBuildDir: Directory = appProject.layout.buildDirectory.get()
-val moduleBuildDir: Directory = layout.buildDirectory.get()
-val autolinkingJavaSources = "generated/autolinking/src/main/java"
 
 android {
     namespace = "com.helloworldreact"
@@ -20,6 +23,9 @@ android {
 
     defaultConfig {
         minSdk = 24
+
+        buildConfigField("boolean", "IS_NEW_ARCHITECTURE_ENABLED", properties["newArchEnabled"].toString())
+        buildConfigField("boolean", "IS_HERMES_ENABLED", properties["hermesEnabled"].toString())
     }
 
     compileOptions {
@@ -31,18 +37,9 @@ android {
         jvmTarget = "17"
     }
 
-    buildTypes {
-        release {
-            buildConfigField("boolean", "IS_NEW_ARCHITECTURE_ENABLED", properties["newArchEnabled"].toString())
-            buildConfigField("boolean", "IS_HERMES_ENABLED", properties["hermesEnabled"].toString())
-        }
-    }
-
-    sourceSets {
-        getByName("main") {
-            assets.srcDirs("$appBuildDir/generated/assets/createBundleReleaseJsAndAssets")
-            res.srcDirs("$appBuildDir/generated/res/createBundleReleaseJsAndAssets")
-            java.srcDirs("$moduleBuildDir/$autolinkingJavaSources")
+    publishing {
+        multipleVariants {
+            allVariants()
         }
     }
 }
@@ -53,20 +50,22 @@ publishing {
             groupId = "com.helloworldreact"
             artifactId = "helloworld"
             version = "0.0.1-local"
-            artifact("$moduleBuildDir/outputs/aar/helloworldreact-release.aar")
+            afterEvaluate {
+                from(components.getByName("default"))
+            }
 
             pom {
                 withXml {
-                    asNode().appendNode("dependencies").apply {
-                        configurations.getByName("api").allDependencies.forEach { dependency ->
-                            appendNode("dependency").apply {
-                                appendNode("groupId", dependency.group)
-                                appendNode("artifactId", dependency.name)
-                                appendNode("version", dependency.version)
-                                appendNode("scope", "compile")
-                            }
-                        }
-                    }
+                    /**
+                     * As a result of `from(components.getByName("default")` all of the project
+                     * dependencies are added to `pom.xml` file. We do not need the react-native
+                     * third party dependencies to be a part of it as we embed those dependencies.
+                     */
+                    val dependenciesNode = (asNode().get("dependencies") as groovy.util.NodeList).first() as groovy.util.Node
+                    dependenciesNode.children()
+                        .filterIsInstance<groovy.util.Node>()
+                        .filter { (it.get("groupId") as groovy.util.NodeList).text() == rootProject.name }
+                        .forEach { dependenciesNode.remove(it) }
                 }
             }
         }
@@ -78,23 +77,29 @@ publishing {
 }
 
 dependencies {
-    api("com.facebook.react:react-android:0.77.0-rc.2")
-    api("com.facebook.react:hermes-android:0.77.0-rc.2")
+    api("com.facebook.react:react-android:0.78.0")
+    api("com.facebook.react:hermes-android:0.78.0")
 }
 
-tasks.register<Copy>("copyAutolinkingSources") {
-    dependsOn(":app:generateAutolinkingPackageList")
-    from("$appBuildDir/$autolinkingJavaSources")
-    into("$moduleBuildDir/$autolinkingJavaSources")
+val moduleBuildDir: Directory = layout.buildDirectory.get()
+
+/**
+ * As a result of `from(components.getByName("default")` all of the project
+ * dependencies are added to `module.json` file. We do not need the react-native
+ * third party dependencies to be a part of it as we embed those dependencies.
+ */
+tasks.register("removeDependenciesFromModuleFile") {
+    doLast {
+        file("$moduleBuildDir/publications/mavenAar/module.json").run {
+            val json = inputStream().use { JsonSlurper().parse(it) as Map<String, Any> }
+            (json["variants"] as? List<MutableMap<String, Any>>)?.forEach { variant ->
+                (variant["dependencies"] as? MutableList<Map<String, Any>>)?.removeAll { it["group"] == rootProject.name }
+            }
+            writer().use { it.write(JsonOutput.prettyPrint(JsonOutput.toJson(json))) }
+        }
+    }
 }
 
-tasks.named("preBuild").configure{
-    dependsOn("copyAutolinkingSources")
-    val buildType = when {
-        gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) } -> "Release"
-        else -> "Debug"
-    }
-    if (buildType == "Release") {
-        dependsOn(":app:createBundleReleaseJsAndAssets")
-    }
+tasks.named("generateMetadataFileForMavenAarPublication") {
+   finalizedBy("removeDependenciesFromModuleFile")
 }

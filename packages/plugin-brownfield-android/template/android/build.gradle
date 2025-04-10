@@ -9,21 +9,13 @@ buildscript {
     }
     repositories {
         google()
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/callstack/big-fat-aar")
-            credentials {
-                username = System.getenv("GITHUB_USERNAME")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
         mavenCentral()
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
-        classpath("com.callstack.react:brownfield-gradle-plugin:0.2.0")
+        classpath("com.callstack.react:brownfield-gradle-plugin:0.3.0")
     }
 }
 
