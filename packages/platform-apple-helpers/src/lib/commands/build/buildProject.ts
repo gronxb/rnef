@@ -171,7 +171,6 @@ export const buildProject = async ({
   try {
     const process = spawn('xcodebuild', xcodebuildArgs, {
       cwd: sourceDir,
-      stdio: logger.isVerbose() ? 'inherit' : ['ignore', 'pipe', 'pipe'],
     });
 
     // Process the output from the AsyncIterable
@@ -198,10 +197,12 @@ export const buildProject = async ({
     if (!xcodeProject.isWorkspace) {
       throw new RnefError(
         `If your project uses CocoaPods, make sure to install pods with "pod install" in ${sourceDir} directory.`,
-        { cause: error }
+        { cause: (error as SubprocessError).stderr }
       );
     }
 
-    throw new RnefError('Running xcodebuild failed', { cause: error });
+    throw new RnefError('Running xcodebuild failed', {
+      cause: (error as SubprocessError).stderr,
+    });
   }
 };

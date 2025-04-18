@@ -1,3 +1,4 @@
+import type { SubprocessError } from '@rnef/tools';
 import { RnefError, spawn, spinner } from '@rnef/tools';
 import { existsSync, readdirSync } from 'fs';
 import path from 'path';
@@ -51,6 +52,7 @@ export const exportArchive = async ({
 
     const { output } = await spawn('xcodebuild', xcodebuildArgs, {
       cwd: sourceDir,
+      stdio: 'pipe',
     });
     try {
       ipaFiles = readdirSync(exportDir).filter((file) => file.endsWith('.ipa'));
@@ -66,6 +68,8 @@ export const exportArchive = async ({
     return output;
   } catch (error) {
     loader.stop('Running xcodebuild failed.', 1);
-    throw new Error('Running xcodebuild failed', { cause: error });
+    throw new Error('Running xcodebuild failed', {
+      cause: (error as SubprocessError).stderr,
+    });
   }
 };
