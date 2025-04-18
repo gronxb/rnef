@@ -2,7 +2,7 @@
 
 RNEF can be configured through a configuration object that defines various aspects of your project setup.
 
-The most basic configuration would, assuming you only support iOS platform and choose Metro as our bundler, would look like this
+The most basic configuration would, assuming you only support iOS platform and choose Metro as our bundler, would look like this:
 
 ```js title="rnef.config.mjs"
 // @ts-check
@@ -36,13 +36,13 @@ It's intentional design decision to explicitly define platforms, bundlers etc, s
   reactNativePath?: string;
 
   // Optional: Custom bundler plugin
-  bundler?: () => void;
+  bundler?: PluginType;
 
   // Optional: Array of plugins
-  plugins?: Array<() => void>;
+  plugins?: Array<PluginType>;
 
   // Optional: Platform-specific configurations
-  platforms?: Record<string, () => void>;
+  platforms?: Record<string, PlatformType>;
 
   // Optional: Additional commands
   commands?: Array<Command>;
@@ -85,7 +85,7 @@ A plugin that registers `my-command` command outputing a hello world would look 
 
 ```ts title="rnef.config.mjs"
 const simplePlugin =
-  (pluginConfig = {}) =>
+  (pluginConfig: SamplePluginConfig) =>
   (api: PluginApi): PluginOutput => {
     api.registerCommand({
       name: 'my-command',
@@ -132,7 +132,8 @@ import { platformIOS } from '@rnef/platform-ios';
 export default {
   // ...
   platforms: {
-    ios: platformIOS(),
+    // config is optional; it translates to `project` config from react-native.config.js file
+    ios: platformIOS(config),
   },
 };
 ```

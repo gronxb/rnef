@@ -35,6 +35,32 @@ import { PackageManagerTabs } from 'rspress/theme';
    };
    ```
 
+   Move any `project` config from `react-native.config.js` to platform arguments in `rnef.config.mjs`, for example:
+
+   ```js title="react-native.config.js
+   module.exports = {
+     project: {
+       ios: {
+         sourceDir: 'custom-source',
+       },
+       android: {
+         appName: 'custom',
+       },
+     },
+   };
+   ```
+
+   translates to:
+
+   ```js title="rnef.config.mjs"
+   export default {
+     platforms: {
+       ios: platformIOS({ sourceDir: 'custom-source' }),
+       android: platformAndroid({ appName: 'custom' }),
+     },
+   };
+   ```
+
 1. Update Android files:
 
    In `android/app/build.gradle` set the `cliFile` with the new path:
