@@ -26,17 +26,19 @@ export function printHelpMessage(
   
      Options:
      
-       -h, --help       Display help for command
-       -v, --version    Output the version number
-       -d, --dir        Create project in specified directory
-       -t, --template       Specify template to use
-       -p, --platform       Specify platform(s) to use
-       --override       Override files in target directory
+       -h, --help                 Display help for command
+       -v, --version              Output the version number
+       -d, --dir                  Create project in specified directory
+       -t, --template             Specify template to use
+       -p, --platform             Specify platform(s) to use
+       --plugin                   Specify plugin(s) to use
+       --remote-cache-provider    Specify remote cache provider
+       --override                 Override files in target directory
      
-     Templates:
+     Available templates:
        ${templates.map((t) => t.name).join(', ')}
 
-     Platforms:
+     Available platforms:
        ${platforms.map((p) => p.name).join(', ')}
   `);
 }
