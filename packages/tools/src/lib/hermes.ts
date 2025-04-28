@@ -14,10 +14,23 @@ function getReactNativePackagePath() {
   return path.dirname(input);
 }
 
+function getComposeSourceMapsPath(): string | null {
+  const rnPackagePath = getReactNativePackagePath();
+  const composeSourceMaps = path.join(
+    rnPackagePath,
+    "scripts",
+    "compose-source-maps.js",
+  );
+  return fs.existsSync(composeSourceMaps) ? composeSourceMaps : null;
+}
+
+
 export async function runHermes({
   bundleOutputPath,
+  sourcemapOutputPath,
 }: {
   bundleOutputPath: string;
+  sourcemapOutputPath?: string;
 }) {
   const hermescPath = getHermescPath();
   if (!hermescPath) {
@@ -25,7 +38,7 @@ export async function runHermes({
       'Hermesc binary not found. Use `--no-hermes` flag to disable Hermes.'
     );
   }
-
+  
   const hermescArgs = [
     '-emit-binary',
     '-max-diagnostic-width=80',
@@ -34,6 +47,7 @@ export async function runHermes({
     '-out',
     bundleOutputPath, // Needs `-out` path, or otherwise outputs to stdout
     bundleOutputPath,
+    ...(sourcemapOutputPath ? ['-emit-sourcemap', sourcemapOutputPath] : []),
   ];
   try {
     await spawn(hermescPath, hermescArgs);
@@ -42,6 +56,33 @@ export async function runHermes({
       'Compiling JS bundle with Hermes failed. Use `--no-hermes` flag to disable Hermes.',
       { cause: (error as SubprocessError).stderr }
     );
+  }
+
+  // Compose source maps if provided
+  if (sourcemapOutputPath) {
+    const hermesSourceMapFile = [path.basename(sourcemapOutputPath, '.map'), '.hbc.map'].join('');
+    const composeSourceMapsPath = getComposeSourceMapsPath();
+
+    if (!composeSourceMapsPath) {
+      throw new Error(
+        "Could not find react-native's compose-source-maps.js script.",
+      );
+    }
+  
+    try {
+      await spawn("node", [
+        composeSourceMapsPath,
+        sourcemapOutputPath,
+        hermesSourceMapFile,
+        "-o",
+        hermesSourceMapFile,
+      ]);
+    } catch (error) {
+      throw new RnefError(
+        'Composing source maps with Hermes failed.',
+        { cause: (error as SubprocessError).stderr }
+      );
+    }    
   }
 }
 

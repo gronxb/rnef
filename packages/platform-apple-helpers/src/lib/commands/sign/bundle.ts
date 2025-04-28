@@ -11,6 +11,7 @@ import {
 type BuildJsBundleOptions = {
   bundleOutputPath: string;
   assetsDestPath: string;
+  sourcemapOutputPath: string;
   useHermes?: boolean;
 };
 
@@ -54,5 +55,8 @@ export async function buildJsBundle(options: BuildJsBundleOptions) {
     return;
   }
 
-  await runHermes({ bundleOutputPath: options.bundleOutputPath });
+  await runHermes({
+    bundleOutputPath: options.bundleOutputPath,
+    sourcemapOutputPath: options.sourcemapOutputPath,
+  });
 }
