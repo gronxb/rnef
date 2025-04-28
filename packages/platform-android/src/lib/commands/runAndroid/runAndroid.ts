@@ -6,6 +6,8 @@ import type {
 } from '@react-native-community/cli-types';
 import type { SupportedRemoteCacheProviders } from '@rnef/tools';
 import {
+  fetchCachedBuild,
+  formatArtifactName,
   intro,
   isInteractive,
   logger,
@@ -18,7 +20,6 @@ import { options } from '../buildAndroid/buildAndroid.js';
 import { runGradle } from '../runGradle.js';
 import { toPascalCase } from '../toPascalCase.js';
 import { getDevices } from './adb.js';
-import { fetchCachedBuild } from './fetchCachedBuild.js';
 import type { DeviceData } from './listAndroidDevices.js';
 import { listAndroidDevices } from './listAndroidDevices.js';
 import { tryInstallAppOnDevice } from './tryInstallAppOnDevice.js';
@@ -59,11 +60,15 @@ export async function runAndroid(
   const tasks = args.tasks ?? [`${mainTaskType}${toPascalCase(args.variant)}`];
 
   if (!args.binaryPath && args.remoteCache) {
-    const cachedBuild = await fetchCachedBuild({
-      variant: args.variant,
-      remoteCacheProvider,
+    const artifactName = await formatArtifactName({
+      platform: 'android',
+      traits: [args.variant],
       root: projectRoot,
       fingerprintOptions,
+    });
+    const cachedBuild = await fetchCachedBuild({
+      artifactName,
+      remoteCacheProvider,
     });
     if (cachedBuild) {
       // @todo replace with a more generic way to pass binary path

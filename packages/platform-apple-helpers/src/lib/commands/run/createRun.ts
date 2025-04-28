@@ -3,6 +3,8 @@ import path from 'node:path';
 import type { SupportedRemoteCacheProviders } from '@rnef/tools';
 import {
   color,
+  fetchCachedBuild,
+  formatArtifactName,
   isInteractive,
   logger,
   promptSelect,
@@ -21,7 +23,6 @@ import {
   getSimulatorPlatformSDK,
 } from '../../utils/getPlatformInfo.js';
 import { listDevicesAndSimulators } from '../../utils/listDevices.js';
-import { fetchCachedBuild } from './fetchCachedBuild.js';
 import { matchingDevice } from './matchingDevice.js';
 import { cacheRecentDevice, sortByRecentDevices } from './recentDevices.js';
 import { runOnDevice } from './runOnDevice.js';
@@ -39,12 +40,15 @@ export const createRun = async (
   fingerprintOptions: { extraSources: string[]; ignorePaths: string[] }
 ) => {
   if (!args.binaryPath && args.remoteCache) {
-    const cachedBuild = await fetchCachedBuild({
-      configuration: args.configuration ?? 'Debug',
-      distribution: args.destination ?? 'simulator',
-      remoteCacheProvider,
+    const artifactName = await formatArtifactName({
+      platform: 'ios',
+      traits: [args.destination ?? 'simulator', args.configuration ?? 'Debug'],
       root: projectRoot,
       fingerprintOptions,
+    });
+    const cachedBuild = await fetchCachedBuild({
+      artifactName,
+      remoteCacheProvider,
     });
     if (cachedBuild) {
       // @todo replace with a more generic way to pass binary path
