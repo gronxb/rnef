@@ -11,7 +11,7 @@ import {
 type BuildJsBundleOptions = {
   bundleOutputPath: string;
   assetsDestPath: string;
-  sourcemapOutputPath: string;
+  sourcemapOutputPath?: string;
   useHermes?: boolean;
 };
 
