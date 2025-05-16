@@ -2,6 +2,7 @@ import * as path from 'node:path';
 import { pluginCallstackTheme } from '@callstack/rspress-theme/plugin';
 import { pluginLlms } from '@rspress/plugin-llms';
 import { defineConfig } from 'rspress/config';
+import pluginSitemap from 'rspress-plugin-sitemap';
 import vercelPluginAnalytics from 'rspress-plugin-vercel-analytics';
 
 export default defineConfig({
@@ -36,5 +37,6 @@ export default defineConfig({
     pluginLlms({
       exclude: ({ page }) => page.routePath.includes('404'),
     }),
+    pluginSitemap({ domain: 'https://rnef.dev' }),
   ],
 });
