@@ -1,4 +1,3 @@
-
 import type { RemoteArtifact, RemoteBuildCache } from '../common.js';
 import {
   deleteGitHubArtifacts,
@@ -44,6 +43,7 @@ export class GitHubBuildCache implements RemoteBuildCache {
     return artifacts.map((artifact) => ({
       name: artifact.name,
       url: artifact.downloadUrl,
+      id: String(artifact.id),
     }));
   }
 
@@ -83,10 +83,13 @@ export class GitHubBuildCache implements RemoteBuildCache {
   }
 
   async upload(): Promise<RemoteArtifact> {
-    throw new Error('Uploading artifacts to GitHub is not supported through GitHub API. See: https://docs.github.com/en/rest/actions/artifacts?apiVersion=2022-11-28');
+    throw new Error(
+      'Uploading artifacts to GitHub is not supported through GitHub API. See: https://docs.github.com/en/rest/actions/artifacts?apiVersion=2022-11-28'
+    );
   }
 }
 
 export const pluginGitHubBuildCache =
-  (options?: { owner: string; repository: string; token: string }) => (): RemoteBuildCache =>
+  (options?: { owner: string; repository: string; token: string }) =>
+  (): RemoteBuildCache =>
     new GitHubBuildCache(options);

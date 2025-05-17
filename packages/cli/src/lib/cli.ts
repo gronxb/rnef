@@ -7,6 +7,7 @@ import { Command } from 'commander';
 import { checkDeprecatedOptions } from './checkDeprecatedOptions.js';
 import { fingerprintPlugin } from './plugins/fingerprint.js';
 import { logConfigPlugin } from './plugins/logConfig.js';
+import { remoteCachePlugin } from './plugins/remoteCache.js';
 
 const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +32,11 @@ export const cli = async ({ cwd, argv }: CliOptions) => {
     .option('--verbose', 'enable verbose logging')
     .version(version);
 
-  const internalPlugins = [logConfigPlugin, fingerprintPlugin];
+  const internalPlugins = [
+    remoteCachePlugin,
+    logConfigPlugin,
+    fingerprintPlugin,
+  ];
   // Register commands from the config
   const config = await getConfig(cwd, internalPlugins);
 
