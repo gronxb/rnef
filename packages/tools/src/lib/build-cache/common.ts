@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { nativeFingerprint } from '../fingerprint/index.js';
 import { getCacheRootPath } from '../project.js';
-import type { spinner } from '../prompts.js';
 
 export const BUILD_CACHE_DIR = 'remote-build';
 
@@ -10,28 +9,58 @@ export type SupportedRemoteCacheProviders = 'github-actions';
 
 export type RemoteArtifact = {
   name: string;
-  downloadUrl: string;
+  url: string;
 };
 
 export type LocalArtifact = {
   name: string;
-  path: string;
 };
 
+/**
+ * Interface for implementing remote build cache providers.
+ * Remote cache providers allow storing and retrieving native build artifacts (e.g. APK, IPA)
+ * from remote storage like S3, GitHub Artifacts etc.
+ */
 export interface RemoteBuildCache {
+  /** Unique identifier for this cache provider, will be displayed in logs */
   name: string;
-  query({
+
+  /**
+   * List available artifacts matching the given name pattern
+   * @param artifactName - Passed after fingerprinting the build, e.g. `rnef-android-debug-1234567890` for android in debug variant
+   * @param limit - Optional maximum number of artifacts to return
+   * @returns Array of matching remote artifacts, or empty array if none found
+   */
+  list({
     artifactName,
+    limit,
   }: {
-    artifactName: string;
-  }): Promise<RemoteArtifact | null>;
-  download({
-    artifact,
-    loader,
-  }: {
-    artifact: RemoteArtifact;
-    loader: ReturnType<typeof spinner>;
-  }): Promise<LocalArtifact>;
+    artifactName: string | undefined;
+    limit?: number;
+  }): Promise<RemoteArtifact[]>;
+
+  /**
+   * Download a remote artifact to local storage
+   * @param artifactName - Name of the artifact to download, e.g. `rnef-android-debug-1234567890` for android in debug variant
+   * @returns Response object from fetch, which will be used to download the artifact
+   */
+  download({ artifactName }: { artifactName: string }): Promise<Response>;
+
+  /**
+   * Delete a remote artifact
+   * @param artifact - Remote artifact to delete, as returned by `list` method
+   * @returns Array of deleted artifacts
+   * @throws {Error} Throws if artifact is not found or deletion fails
+   */
+  delete({ artifactName }: { artifactName: string }): Promise<RemoteArtifact[]>;
+
+  /**
+   * Upload a local artifact stored in build cache to remote storage
+   * @param artifactName - Name of the artifact to upload, e.g. `rnef-android-debug-1234567890` for android in debug variant
+   * @returns Remote artifact info if upload successful
+   * @throws {Error} Throws if upload fails
+   */
+  upload({ artifactName }: { artifactName: string }): Promise<RemoteArtifact>;
 }
 
 /**
@@ -63,16 +92,8 @@ export function getLocalArtifactPath(artifactName: string) {
 }
 
 export function getLocalBinaryPath(artifactPath: string) {
-  let binaryPath: string | null = null;
   const files = fs.readdirSync(artifactPath);
-
-  // assume there is only one binary in the artifact
-  for (const file of files) {
-    if (file) {
-      binaryPath = path.join(artifactPath, file);
-    }
-    break;
-  }
-
-  return binaryPath;
+  // Get the first non-hidden, non-directory file as the binary
+  const binaryName = files.find((file) => file && !file.startsWith('.'));
+  return binaryName ? path.join(artifactPath, binaryName) : null;
 }

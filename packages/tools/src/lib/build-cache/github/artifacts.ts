@@ -1,10 +1,9 @@
-import * as fs from 'node:fs';
-import AdmZip from 'adm-zip';
 import cacheManager from '../../cacheManager.js';
 import { color } from '../../color.js';
+import { RnefError } from '../../error.js';
 import logger from '../../logger.js';
-import type { spinner } from '../../prompts.js';
-import { getGitHubToken, type GitHubRepoDetails } from './config.js';
+import type { RemoteArtifact } from '../common.js';
+import { type GitHubRepoDetails } from './config.js';
 
 const PAGE_SIZE = 100; // Maximum allowed by GitHub API
 
@@ -31,24 +30,24 @@ type GitHubArtifactResponse = {
 };
 
 export async function fetchGitHubArtifactsByName(
-  name: string,
-  repoDetails: GitHubRepoDetails | null
+  name: string | undefined,
+  repoDetails: GitHubRepoDetails,
+  limit?: number
 ): Promise<GitHubArtifact[] | []> {
-  if (!repoDetails) {
-    return [];
-  }
   let page = 1;
   const result: GitHubArtifact[] = [];
   const owner = repoDetails.owner;
   const repo = repoDetails.repository;
-  const url = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts?per_page=${PAGE_SIZE}&page=${page}`;
+  const url = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts?per_page=${
+    limit ?? PAGE_SIZE
+  }&page=${page}${name ? `&name=${name}` : ''}`;
 
   try {
     while (true) {
       let data: GitHubArtifactResponse;
       try {
         const response = await fetch(url, {
-          headers: { Authorization: `token ${getGitHubToken()}` },
+          headers: { Authorization: `token ${repoDetails.token}` },
         });
         if (!response.ok) {
           throw new Error(
@@ -61,12 +60,7 @@ export async function fetchGitHubArtifactsByName(
       }
 
       const artifacts = data.artifacts
-        .filter(
-          (artifact) =>
-            !artifact.expired &&
-            artifact.workflow_run?.id &&
-            artifact.name === name
-        )
+        .filter((artifact) => !artifact.expired && artifact.workflow_run?.id)
         .map((artifact) => ({
           id: artifact.id,
           name: artifact.name,
@@ -111,67 +105,42 @@ Next time you run the command, you will be prompted to enter the new token.`
   return result;
 }
 
-export async function downloadGitHubArtifact(
-  downloadUrl: string,
-  targetPath: string,
-  name: string,
-  loader: ReturnType<typeof spinner>
-): Promise<void> {
+export async function deleteGitHubArtifacts(
+  artifacts: GitHubArtifact[],
+  repoDetails: GitHubRepoDetails,
+  artifactName: string
+): Promise<RemoteArtifact[]> {
+  const deletedArtifacts: RemoteArtifact[] = [];
   try {
-    fs.mkdirSync(targetPath, { recursive: true });
+    const owner = repoDetails.owner;
+    const repo = repoDetails.repository;
 
-    const response = await fetch(downloadUrl, {
-      headers: {
-        Authorization: `token ${getGitHubToken()}`,
-        'Accept-Encoding': 'None',
-      },
-    });
+    // Delete all matching artifacts
+    for (const artifact of artifacts) {
+      const artifactId = artifact.id;
+      const url = `https://api.github.com/repos/${owner}/${repo}/actions/artifacts/${artifactId}`;
 
-    if (!response.ok || !response.body) {
-      throw new Error(`Failed to download artifact: ${response.statusText}`);
-    }
-    let responseData = response;
-    const contentLength = response.headers.get('content-length');
-
-    if (contentLength) {
-      const totalBytes = parseInt(contentLength, 10);
-      const totalMB = (totalBytes / 1024 / 1024).toFixed(2);
-      let downloadedBytes = 0;
-
-      const reader = response.body.getReader();
-      const stream = new ReadableStream({
-        async start(controller) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              break;
-            }
-            downloadedBytes += value.length;
-            const progress = ((downloadedBytes / totalBytes) * 100).toFixed(0);
-            loader.message(
-              `Downloading cached build from ${name} (${progress}% of ${totalMB} MB)`
-            );
-            controller.enqueue(value);
-          }
-          controller.close();
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${repoDetails.token}`,
+          Accept: 'application/vnd.github+json',
         },
       });
-      responseData = new Response(stream);
+
+      if (!response.ok) {
+        logger.warn(
+          `Failed to delete artifact ID ${artifactId}: ${response.status} ${response.statusText}`
+        );
+        continue;
+      }
+
+      deletedArtifacts.push({ name: artifact.name, url: artifact.downloadUrl });
     }
-
-    const zipPath = targetPath + '.zip';
-    const buffer = await responseData.arrayBuffer();
-    fs.writeFileSync(zipPath, new Uint8Array(buffer));
-
-    unzipFile(zipPath, targetPath);
-    fs.unlinkSync(zipPath);
+    return deletedArtifacts;
   } catch (error) {
-    console.log('Error: ', error);
-    throw new Error(`Failed to download cached build ${error}`);
+    throw new RnefError(`Failed to delete artifacts named "${artifactName}"`, {
+      cause: error,
+    });
   }
-}
-
-function unzipFile(zipPath: string, targetPath: string): void {
-  const zip = new AdmZip(zipPath);
-  zip.extractAllTo(targetPath, true);
 }

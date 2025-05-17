@@ -1,116 +1,92 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import * as tar from 'tar';
-import { color } from '../../color.js';
-import { getGitRemote } from '../../git.js';
-import logger from '../../logger.js';
-import type { spinner } from '../../prompts.js';
-import type {
-  LocalArtifact,
-  RemoteArtifact,
-  RemoteBuildCache,
-} from '../common.js';
-import { getLocalArtifactPath } from '../common.js';
+
+import type { RemoteArtifact, RemoteBuildCache } from '../common.js';
 import {
-  downloadGitHubArtifact,
+  deleteGitHubArtifacts,
   fetchGitHubArtifactsByName,
 } from './artifacts.js';
 import type { GitHubRepoDetails } from './config.js';
-import {
-  detectGitHubRepoDetails,
-  getGitHubToken,
-  promptForGitHubToken,
-} from './config.js';
+import { detectGitHubRepoDetails } from './config.js';
 
 export class GitHubBuildCache implements RemoteBuildCache {
   name = 'GitHub';
   repoDetails: GitHubRepoDetails | null = null;
 
-  async detectRepoDetails() {
-    const gitRemote = await getGitRemote();
-    this.repoDetails = gitRemote
-      ? await detectGitHubRepoDetails(gitRemote)
-      : null;
-    if (!this.repoDetails) {
-      return null;
+  constructor(config?: { owner: string; repository: string; token: string }) {
+    if (config) {
+      this.repoDetails = {
+        owner: config.owner,
+        repository: config.repository,
+        token: config.token,
+      };
     }
-    if (!getGitHubToken()) {
-      logger.warn(
-        `No GitHub Personal Access Token found necessary to download cached builds.
-Please generate one at: ${color.cyan('https://github.com/settings/tokens')}
-Include "repo", "workflow", and "read:org" permissions.`
-      );
-      await promptForGitHubToken();
+  }
+
+  async getRepoDetails() {
+    if (!this.repoDetails) {
+      this.repoDetails = await detectGitHubRepoDetails();
     }
     return this.repoDetails;
   }
 
-  async query({
+  async list({
     artifactName,
+    limit,
   }: {
-    artifactName: string;
-  }): Promise<RemoteArtifact | null> {
-    const repoDetails = await this.detectRepoDetails();
-    if (!getGitHubToken()) {
-      logger.warn(`No GitHub Personal Access Token found.`);
-      return null;
-    }
-
-    if (!repoDetails) {
-      return null;
-    }
-
+    artifactName?: string;
+    limit?: number;
+  }): Promise<RemoteArtifact[]> {
+    const repoDetails = await this.getRepoDetails();
     const artifacts = await fetchGitHubArtifactsByName(
       artifactName,
-      repoDetails
+      repoDetails,
+      limit
     );
-    if (artifacts.length === 0) {
-      return null;
-    }
-
-    return {
-      name: artifacts[0].name,
-      downloadUrl: artifacts[0].downloadUrl,
-    };
+    return artifacts.map((artifact) => ({
+      name: artifact.name,
+      url: artifact.downloadUrl,
+    }));
   }
 
   async download({
-    artifact,
-    loader,
+    artifactName,
   }: {
-    artifact: RemoteArtifact;
-    loader: ReturnType<typeof spinner>;
-  }): Promise<LocalArtifact> {
-    const artifactPath = getLocalArtifactPath(artifact.name);
-    await downloadGitHubArtifact(
-      artifact.downloadUrl,
-      artifactPath,
-      this.name,
-      loader
+    artifactName: string;
+  }): Promise<Response> {
+    const repoDetails = await this.getRepoDetails();
+    const artifacts = await this.list({ artifactName });
+    if (artifacts.length === 0) {
+      throw new Error(`No artifact found with name "${artifactName}"`);
+    }
+    return fetch(artifacts[0].url, {
+      headers: {
+        Authorization: `token ${repoDetails.token}`,
+        'Accept-Encoding': 'None',
+      },
+    });
+  }
+
+  async delete({
+    artifactName,
+  }: {
+    artifactName: string;
+  }): Promise<RemoteArtifact[]> {
+    const repoDetails = await this.getRepoDetails();
+    const artifacts = await fetchGitHubArtifactsByName(
+      artifactName,
+      repoDetails,
+      undefined
     );
-    await extractArtifactTarballIfNeeded(artifactPath);
-    return {
-      name: artifact.name,
-      path: artifactPath,
-    };
+    if (artifacts.length === 0) {
+      throw new Error(`No artifact found with name "${artifactName}"`);
+    }
+    return await deleteGitHubArtifacts(artifacts, repoDetails, artifactName);
+  }
+
+  async upload(): Promise<RemoteArtifact> {
+    throw new Error('Uploading artifacts to GitHub is not supported through GitHub API. See: https://docs.github.com/en/rest/actions/artifacts?apiVersion=2022-11-28');
   }
 }
 
-async function extractArtifactTarballIfNeeded(artifactPath: string) {
-  const tarPath = path.join(artifactPath, 'app.tar.gz');
-
-  // If the tarball is not found, it means the artifact is already unpacked.
-  if (!fs.existsSync(tarPath)) {
-    return;
-  }
-
-  // iOS simulator build artifact (*.app directory) is packed in .tar.gz file to
-  // preserve execute file permission.
-  // See: https://github.com/actions/upload-artifact?tab=readme-ov-file#permission-loss
-  await tar.extract({
-    file: tarPath,
-    cwd: artifactPath,
-    gzip: true,
-  });
-  fs.unlinkSync(tarPath);
-}
+export const pluginGitHubBuildCache =
+  (options?: { owner: string; repository: string; token: string }) => (): RemoteBuildCache =>
+    new GitHubBuildCache(options);
