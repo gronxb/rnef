@@ -11,21 +11,15 @@ import {
   getLocalArtifactPath,
   getLocalBinaryPath,
   type RemoteBuildCache,
-  type SupportedRemoteCacheProviders,
 } from './common.js';
 import type { LocalBuild } from './localBuildCache.js';
 import { queryLocalBuildCache } from './localBuildCache.js';
-import { createRemoteBuildCache } from './remoteBuildCache.js';
 
 export type Distribution = 'simulator' | 'device';
 
 type FetchCachedBuildOptions = {
   artifactName: string;
-  remoteCacheProvider:
-    | SupportedRemoteCacheProviders
-    | undefined
-    | null
-    | { (): RemoteBuildCache };
+  remoteCacheProvider: undefined | null | { (): RemoteBuildCache };
 };
 
 export async function fetchCachedBuild({
@@ -39,12 +33,18 @@ export async function fetchCachedBuild({
     logger.warn(`No remote cache provider set. You won't be able to access reusable builds from e.g. GitHub Actions. 
 To configure it, set the "remoteCacheProvider" key in ${color.cyan(
       'rnef.config.mjs'
-    )} file:
-{
-  remoteCacheProvider: 'github-actions'
+    )} file. For example:
+
+import { providerGitHub } from '@rnef/provider-github';
+export default {
+  // ...
+  remoteCacheProvider: providerGitHub()
 }
-To disable this warning, set "remoteCacheProvider" to null.
-Proceeding with local build.`);
+
+To disable this warning, set the provider to null:
+{
+  remoteCacheProvider: null
+}`);
     return null;
   }
   const loader = spinner();
@@ -58,11 +58,11 @@ Proceeding with local build.`);
     return localBuild;
   }
 
-  const remoteBuildCache = await createRemoteBuildCache(remoteCacheProvider);
-  if (!remoteBuildCache) {
+  if (!remoteCacheProvider) {
     loader.stop(`No remote cache provider found, skipping.`);
     return null;
   }
+  const remoteBuildCache = remoteCacheProvider();
 
   loader.stop(`No local build cached. Checking ${remoteBuildCache.name}.`);
 
