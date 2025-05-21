@@ -150,12 +150,17 @@ When `remoteCacheProvider` is set, the CLI will:
 
 ### Built-in GitHub Actions provider
 
-RNEF comes with built-in GitHub Actions remote cache provider, which downloads native build artifacts uploaded through [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action from [GitHub Worfklow Artifacts](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/storing-and-sharing-data-from-a-workflow). You can configure it as:
+RNEF comes with built-in GitHub Actions remote cache provider, which downloads native build artifacts uploaded through [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action from [GitHub Worfklow Artifacts](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/storing-and-sharing-data-from-a-workflow). You can configure it as follows:
 
 ```ts
+import { providerGitHub } from '@rnef/provider-github';
 export default {
   // ...
-  remoteCacheProvider: 'github-actions',
+  remoteCacheProvider: providerGitHub({
+    owner: 'github_org',
+    repository: 'github_repo_name',
+    token: 'personal_access_token',
+  }),
 };
 ```
 
@@ -199,7 +204,7 @@ Then pass the `pluginDummyLocalCacheProvider` function called with optional conf
 ```ts
 export default {
   // ...
-  remoteCacheProvider: pluginDummyLocalCacheProvider(),
+  remoteCacheProvider: pluginDummyLocalCacheProvider(options),
 };
 ```
 
