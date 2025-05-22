@@ -3,6 +3,7 @@ import type { PluginApi, PluginOutput } from '@rnef/config';
 import {
   type BuildFlags,
   createBuild,
+  genericDestinations,
   getBuildOptions,
   getBuildPaths,
   getInfo,
@@ -30,9 +31,9 @@ export const pluginBrownfieldIos =
         );
         const { derivedDataDir } = getBuildPaths('ios');
 
-        const destinations = args.destinations ?? [
-          'generic/platform=iphoneos',
-          'generic/platform=iphonesimulator',
+        const destination = args.destination ?? [
+          genericDestinations.ios.device,
+          genericDestinations.ios.simulator,
         ];
 
         const buildFolder = args.buildFolder ?? derivedDataDir;
@@ -52,7 +53,7 @@ export const pluginBrownfieldIos =
         await createBuild({
           platformName: 'ios',
           projectConfig: iosConfig,
-          args: { ...args, scheme, destinations, buildFolder },
+          args: { ...args, scheme, destination, buildFolder },
           projectRoot,
           reactNativePath: api.getReactNativePath(),
         });
