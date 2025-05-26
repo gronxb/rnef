@@ -1,6 +1,6 @@
 ---
-'@rnef/platform-apple-helpers': minor
-'@rnef/plugin-brownfield-ios': minor
+'@rnef/platform-apple-helpers': patch
+'@rnef/plugin-brownfield-ios': patch
 'rnef-docs': patch
 ---
 
