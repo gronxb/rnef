@@ -4,7 +4,7 @@ import { PackageManagerTabs } from 'rspress/theme';
 
 1. Install dev dependencies:
 
-   <PackageManagerTabs command="install @rnef/cli @rnef/plugin-metro @rnef/platform-android @rnef/platform-ios" />
+   <PackageManagerTabs command="install -D @rnef/cli @rnef/plugin-metro @rnef/platform-android @rnef/platform-ios" />
 
 1. Remove `@react-native-community/cli` and related packages.
 
@@ -105,6 +105,18 @@ import { PackageManagerTabs } from 'rspress/theme';
 
    ```sh
    git clean -fdx ios/ android/
+   ```
+
+1. Update scripts in `package.json`:
+
+   ```json title="package.json"
+   {
+     "scripts": {
+       "start": "rnef start",
+       "android": "rnef run:android",
+       "ios": "rnef run:ios"
+     }
+   }
    ```
 
 1. Run new commands:
