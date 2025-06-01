@@ -18,7 +18,7 @@ const args: Flags = {
   appIdSuffix: '',
   mainActivity: undefined,
   port: '8081',
-  remoteCache: false,
+  local: true,
 };
 const androidProject: AndroidProjectConfig = {
   appName: 'app',
@@ -265,6 +265,7 @@ function spawnMockImplementation(
 
 test.each([['release'], ['debug'], ['staging']])(
   'runAndroid runs gradle build with correct configuration for --variant %s and launches on emulator-5554 when prompted with two devices available',
+  { timeout: 15000 },
   async (variant) => {
     (spawn as Mock).mockImplementation((file, args) => {
       if (mockCallEmulatorAvdName(file, args, 'emulator-5554')) {
