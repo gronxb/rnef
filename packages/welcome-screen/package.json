@@ -1,0 +1,30 @@
+{
+  "name": "@rnef/welcome-screen",
+  "version": "0.7.17",
+  "type": "module",
+  "main": "./dist/src/index.jsx",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    "types": "./dist/src/index.d.ts",
+    "default": "./dist/src/index.jsx"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "publish:npm": "npm publish --access public",
+    "publish:verdaccio": "npm publish --registry http://localhost:4873 --userconfig ../../.npmrc"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "19.0.0",
+    "react-native": "0.79.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
