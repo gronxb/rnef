@@ -1,12 +1,8 @@
-<p align="center">
+<a href="https://www.callstack.com/open-source" align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./website/docs/public/logo.svg">
-    <img alt="RNEF" src="./website/docs/public/logo.svg" height="100">
+    <img alt="React Native Enterprise Framework" src="https://github.com/user-attachments/assets/5d7d2dd4-4561-431c-a70b-05a76896b8d4">
   </picture>
-</p>
-<h1 align="center" style="border-bottom: 0px">
-  React Native Enterprise Framework<br />
-</h1>
+</a>
 <p align="center">
   This is a React Native framework for developing large, modular applications for all the platforms supported by React Native.
 </p>
