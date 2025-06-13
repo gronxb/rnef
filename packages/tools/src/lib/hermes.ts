@@ -70,7 +70,6 @@ export async function runHermes({
 
   // Handle sourcemap composition if enabled
   if (sourcemapOutputPath) {
-    const sourceMapFile = `${bundleOutputPath}.map`;
     const hermesSourceMapFile = `${hbcOutputPath}.map`;
 
     if (!fs.existsSync(hermesSourceMapFile)) {
@@ -89,7 +88,7 @@ export async function runHermes({
     try {
       await spawn('node', [
         composeSourceMapsPath,
-        sourceMapFile,
+        sourcemapOutputPath,
         hermesSourceMapFile,
         '-o',
         sourcemapOutputPath,
