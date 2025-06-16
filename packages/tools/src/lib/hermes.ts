@@ -99,13 +99,6 @@ export async function runHermes({
         { cause: (error as SubprocessError).stderr }
       );
     }
-
-    // Clean up temporary hermes sourcemap file
-    try {
-      fs.unlinkSync(hermesSourceMapFile);
-    } catch  {
-      // Ignore cleanup errors
-    }
   }
 
   // Move .hbc file to overwrite the original bundle file
