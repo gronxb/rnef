@@ -59,14 +59,8 @@ function injectDebugId(sourceMapPath: string, debugId: string) {
   try {
     const sourceMapContent = fs.readFileSync(sourceMapPath, 'utf-8');
     const sourceMap = JSON.parse(sourceMapContent);
-    
-    // Create a new object with debugId at the top level
-    const newSourceMap = {
-      debugId,
-      ...sourceMap
-    };
-    
-    fs.writeFileSync(sourceMapPath, JSON.stringify(newSourceMap));
+    sourceMap.debugId = debugId;
+    fs.writeFileSync(sourceMapPath, JSON.stringify(sourceMap));
   } catch {
     throw new RnefError(
       `Failed to inject debugId into sourcemap: ${sourceMapPath}`
