@@ -98,6 +98,25 @@ export async function runHermes({
         { cause: (error as SubprocessError).stderr }
       );
     }
+
+    // Clean up temporary hermes sourcemap file
+    try {
+      fs.unlinkSync(hermesSourceMapFile);
+    } catch  {
+      // Ignore cleanup errors
+    }
+  }
+
+  // Move .hbc file to overwrite the original bundle file
+  try {
+    if (fs.existsSync(bundleOutputPath)) {
+      fs.unlinkSync(bundleOutputPath);
+    }
+    fs.renameSync(hbcOutputPath, bundleOutputPath);
+  } catch (error) {
+    throw new RnefError(
+      `Failed to move compiled Hermes bytecode to bundle output path: ${error}`
+    );
   }
 }
 
