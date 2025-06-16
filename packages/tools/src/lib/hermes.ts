@@ -32,6 +32,43 @@ function getComposeSourceMapsPath(): string {
   return composeSourceMapsPath;
 }
 
+/**
+ * Extracts debug_id from sourcemap file.
+ * @see https://github.com/tc39/ecma426/blob/main/proposals/debug-id.md
+ * @param sourceMapPath - Sourcemap file path
+ * @returns debug_id or debugId value. Returns null if extraction fails
+ */
+function extractDebugId(sourceMapPath: string): string | null {
+  try {
+    const sourceMapContent = fs.readFileSync(sourceMapPath, 'utf-8');
+    const sourceMap = JSON.parse(sourceMapContent);
+    return sourceMap.debug_id || sourceMap.debugId;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Inject debug_id into sourcemap file.
+ * @see https://github.com/tc39/ecma426/blob/main/proposals/debug-id.md
+ * @param sourceMapPath - Sourcemap file path
+ * @param debugId - debug_id value to inject
+ * @throws {RnefError} Throws an error if injection fails
+ */
+function injectDebugId(sourceMapPath: string, debugId: string) {
+  try {
+    const sourceMapContent = fs.readFileSync(sourceMapPath, 'utf-8');
+    const sourceMap = JSON.parse(sourceMapContent);
+    sourceMap.debug_id = debugId;
+    sourceMap.debugId = debugId;
+    fs.writeFileSync(sourceMapPath, JSON.stringify(sourceMap));
+  } catch {
+    throw new RnefError(
+      `Failed to inject debug_id into sourcemap: ${sourceMapPath}`
+    );
+  }
+}
+
 export async function runHermes({
   bundleOutputPath,
   sourcemapOutputPath,
@@ -79,6 +116,9 @@ export async function runHermes({
     const composeSourceMapsPath = getComposeSourceMapsPath();
 
     try {
+      // Extract debug_id from original sourcemap
+      const debugId = extractDebugId(sourcemapOutputPath);
+
       await spawn('node', [
         composeSourceMapsPath,
         sourcemapOutputPath,
@@ -86,6 +126,12 @@ export async function runHermes({
         '-o',
         sourcemapOutputPath,
       ]);
+
+      // Inject debug_id back into the composed sourcemap
+      if (debugId) {
+        injectDebugId(sourcemapOutputPath, debugId);
+      }
+
     } catch (error) {
       throw new RnefError(
         'Failed to run compose-source-maps script',
