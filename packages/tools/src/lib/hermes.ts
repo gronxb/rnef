@@ -76,13 +76,6 @@ export async function runHermes({
   // Handle sourcemap composition if enabled
   if (sourcemapOutputPath) {
     const hermesSourceMapFile = `${hbcOutputPath}.map`;
-
-    if (!fs.existsSync(hermesSourceMapFile)) {
-      throw new RnefError(
-        `Hermes-generated sourcemap file (${hermesSourceMapFile}) not found.`
-      );
-    }
-
     const composeSourceMapsPath = getComposeSourceMapsPath();
 
     try {
