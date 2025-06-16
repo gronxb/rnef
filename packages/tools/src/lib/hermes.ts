@@ -33,38 +33,43 @@ function getComposeSourceMapsPath(): string {
 }
 
 /**
- * Extracts debug_id from sourcemap file.
+ * Extracts debugId from sourcemap file.
  * @see https://github.com/tc39/ecma426/blob/main/proposals/debug-id.md
  * @param sourceMapPath - Sourcemap file path
- * @returns debug_id or debugId value. Returns null if extraction fails
+ * @returns debugId value. Returns null if extraction fails
  */
 function extractDebugId(sourceMapPath: string): string | null {
   try {
     const sourceMapContent = fs.readFileSync(sourceMapPath, 'utf-8');
     const sourceMap = JSON.parse(sourceMapContent);
-    return sourceMap.debug_id || sourceMap.debugId;
+    return sourceMap.debugId;
   } catch {
     return null;
   }
 }
 
 /**
- * Inject debug_id into sourcemap file.
+ * Inject debugId into sourcemap file at the top level.
  * @see https://github.com/tc39/ecma426/blob/main/proposals/debug-id.md
  * @param sourceMapPath - Sourcemap file path
- * @param debugId - debug_id value to inject
+ * @param debugId - debugId value to inject
  * @throws {RnefError} Throws an error if injection fails
  */
 function injectDebugId(sourceMapPath: string, debugId: string) {
   try {
     const sourceMapContent = fs.readFileSync(sourceMapPath, 'utf-8');
     const sourceMap = JSON.parse(sourceMapContent);
-    sourceMap.debug_id = debugId;
-    sourceMap.debugId = debugId;
-    fs.writeFileSync(sourceMapPath, JSON.stringify(sourceMap));
+    
+    // Create a new object with debugId at the top level
+    const newSourceMap = {
+      debugId,
+      ...sourceMap
+    };
+    
+    fs.writeFileSync(sourceMapPath, JSON.stringify(newSourceMap));
   } catch {
     throw new RnefError(
-      `Failed to inject debug_id into sourcemap: ${sourceMapPath}`
+      `Failed to inject debugId into sourcemap: ${sourceMapPath}`
     );
   }
 }
@@ -116,7 +121,7 @@ export async function runHermes({
     const composeSourceMapsPath = getComposeSourceMapsPath();
 
     try {
-      // Extract debug_id from original sourcemap
+      // Extract debugId from original sourcemap
       const debugId = extractDebugId(sourcemapOutputPath);
 
       await spawn('node', [
@@ -127,7 +132,7 @@ export async function runHermes({
         sourcemapOutputPath,
       ]);
 
-      // Inject debug_id back into the composed sourcemap
+      // Inject debugId back into the composed sourcemap
       if (debugId) {
         injectDebugId(sourcemapOutputPath, debugId);
       }
