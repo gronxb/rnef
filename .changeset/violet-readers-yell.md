@@ -1,9 +1,9 @@
 ---
-'@rnef/platform-apple-helpers': patch
-'@rnef/platform-android': patch
-'@rnef/plugin-repack': patch
-'@rnef/plugin-metro': patch
-'@rnef/tools': patch
+'@rnef/platform-apple-helpers': minor
+'@rnef/platform-android': minor
+'@rnef/plugin-repack': minor
+'@rnef/plugin-metro': minor
+'@rnef/tools': minor
 ---
 
 feat: support hermes sourcemap compose
