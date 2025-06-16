@@ -17,14 +17,13 @@ function getReactNativePackagePath() {
 /**
  * Returns the path to the react-native compose-source-maps.js script.
  */
-function getComposeSourceMapsPath(): string | null {
+function getComposeSourceMapsPath(): string {
   const rnPackagePath = getReactNativePackagePath();
-  const composeSourceMaps = path.join(
+  return path.join(
     rnPackagePath,
     'scripts',
     'compose-source-maps.js',
   );
-  return fs.existsSync(composeSourceMaps) ? composeSourceMaps : null;
 }
 
 export async function runHermes({
