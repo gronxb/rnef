@@ -19,11 +19,17 @@ function getReactNativePackagePath() {
  */
 function getComposeSourceMapsPath(): string {
   const rnPackagePath = getReactNativePackagePath();
-  return path.join(
+  const composeSourceMapsPath = path.join(
     rnPackagePath,
     'scripts',
     'compose-source-maps.js',
   );
+  if (!fs.existsSync(composeSourceMapsPath)) {
+    throw new RnefError(
+      "Could not find react-native's compose-source-maps.js script."
+    );
+  }
+  return composeSourceMapsPath;
 }
 
 export async function runHermes({
@@ -78,11 +84,6 @@ export async function runHermes({
     }
 
     const composeSourceMapsPath = getComposeSourceMapsPath();
-    if (!composeSourceMapsPath) {
-      throw new RnefError(
-        "Could not find react-native's compose-source-maps.js script."
-      );
-    }
 
     try {
       await spawn('node', [
