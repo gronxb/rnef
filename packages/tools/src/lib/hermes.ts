@@ -14,10 +14,30 @@ function getReactNativePackagePath() {
   return path.dirname(input);
 }
 
+/**
+ * Returns the path to the react-native compose-source-maps.js script.
+ */
+function getComposeSourceMapsPath(): string {
+  const rnPackagePath = getReactNativePackagePath();
+  const composeSourceMapsPath = path.join(
+    rnPackagePath,
+    'scripts',
+    'compose-source-maps.js',
+  );
+  if (!fs.existsSync(composeSourceMapsPath)) {
+    throw new RnefError(
+      "Could not find react-native's compose-source-maps.js script."
+    );
+  }
+  return composeSourceMapsPath;
+}
+
 export async function runHermes({
   bundleOutputPath,
+  sourcemapOutputPath,
 }: {
   bundleOutputPath: string;
+  sourcemapOutputPath?: string;
 }) {
   const hermescPath = getHermescPath();
   if (!hermescPath) {
@@ -26,21 +46,63 @@ export async function runHermes({
     );
   }
 
+  // Output will be .hbc file
+  const hbcOutputPath = `${bundleOutputPath}.hbc`;
+
   const hermescArgs = [
     '-emit-binary',
     '-max-diagnostic-width=80',
     '-O',
     '-w',
     '-out',
-    bundleOutputPath, // Needs `-out` path, or otherwise outputs to stdout
+    hbcOutputPath,
     bundleOutputPath,
   ];
+
+  // Add sourcemap flag if enabled
+  if (sourcemapOutputPath) {
+    hermescArgs.push('-output-source-map');
+  }
+
   try {
     await spawn(hermescPath, hermescArgs);
   } catch (error) {
     throw new RnefError(
       'Compiling JS bundle with Hermes failed. Use `--no-hermes` flag to disable Hermes.',
       { cause: (error as SubprocessError).stderr }
+    );
+  }
+
+  // Handle sourcemap composition if enabled
+  if (sourcemapOutputPath) {
+    const hermesSourceMapFile = `${hbcOutputPath}.map`;
+    const composeSourceMapsPath = getComposeSourceMapsPath();
+
+    try {
+      await spawn('node', [
+        composeSourceMapsPath,
+        sourcemapOutputPath,
+        hermesSourceMapFile,
+        '-o',
+        sourcemapOutputPath,
+      ]);
+    } catch (error) {
+      throw new RnefError(
+        'Failed to run compose-source-maps script',
+        { cause: (error as SubprocessError).stderr }
+      );
+    }
+  }
+
+  // Move .hbc file to overwrite the original bundle file
+  try {
+    if (fs.existsSync(bundleOutputPath)) {
+      fs.unlinkSync(bundleOutputPath);
+    }
+    fs.renameSync(hbcOutputPath, bundleOutputPath);
+  } catch (error) {
+    throw new RnefError(
+      `Failed to move compiled Hermes bytecode to bundle output path: ${error}`
     );
   }
 }
